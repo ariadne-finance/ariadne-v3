@@ -1,0 +1,28 @@
+{
+  "private": true,
+  "name": "ariadne-v3-contracts",
+  "version": "0.0.0",
+  "repository": {
+    "url": "https://github.com/ariadne-finance/ariadne-v3-contracts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ariadne-finance/ariadne-v3-contracts/issues"
+  },
+  "scripts": {
+    "lint": "solhint `find contracts -type f -name \\*sol`"
+  },
+  "dependencies": {
+    "@aave/core-v3": "^1.18.0",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.4",
+    "@nomiclabs/hardhat-etherscan": "^3.1.7",
+    "@openzeppelin/contracts-upgradeable": "^5.0.1",
+    "@openzeppelin/hardhat-upgrades": "^3.0.3",
+    "ethers": "^6.10.0",
+    "hardhat": "^2.19.1",
+    "hardhat-abi-exporter": "github:ItsNickBarry/hardhat-abi-exporter",
+    "hardhat-contract-sizer": "^2.10.0",
+    "hardhat-deal": "^3.0.3",
+    "solhint": "^4.0.0"
+  }
+}
