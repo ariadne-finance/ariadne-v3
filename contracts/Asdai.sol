@@ -236,6 +236,8 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
 
         _burn(msg.sender, amount);
         wxdai().transfer(msg.sender, wxdaiReturnAmount);
+
+        emit PositionWithdraw(amount, wxdaiReturnAmount, msg.sender);
     }
 
     function _withdrawOpen(uint256 amount)
