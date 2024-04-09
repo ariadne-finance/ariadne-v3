@@ -103,12 +103,9 @@ dist
 # TernJS port file
 .tern-port
 
-docs 
-abi
-cache 
-artifacts
-deployments
-hardhat
-.vscode
-fork-*
+contracts/docs 
+contracts/cache 
+contracts/artifacts
+contracts/deployments
+contracts/fork-*
 
