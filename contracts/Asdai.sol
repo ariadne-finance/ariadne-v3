@@ -29,15 +29,15 @@ uint8 constant FLAGS_WITHDRAW_PAUSED   = 1 << 2;
 
 uint256 constant EXTRACT_LTV_FROM_POOL_CONFIGURATION_DATA_MASK = (1 << 16) - 1;
 
-uint256 constant MIN_DND_AMOUNT_TO_WITHDRAW = 10 ** 6; // roughly one cent
+uint256 constant MIN_ASDAI_AMOUNT_TO_WITHDRAW = 10 ** 6; // roughly one cent
 
-error DNDOperationDisabledByFlags();
-error DNDOnlyFlashloanLender();
-error DNDUnknownFlashloanMode();
-error DNDIncorrectFlashloanTokenReceived();
-error DNDIncorrectDepositOrWithdrawalAmount();
-error DNDRebalanceNotNeccessary();
-error DNDNotEnoughToBorrow();
+error AsdaiOperationDisabledByFlags();
+error AsdaiOnlyFlashloanLender();
+error AsdaiUnknownFlashloanMode();
+error AsdaiIncorrectFlashloanTokenReceived();
+error AsdaiIncorrectDepositOrWithdrawalAmount();
+error AsdaiRebalanceNotNeccessary();
+error AsdaiNotEnoughToBorrow();
 
 IBalancerVault constant BALANCER_VAULT = IBalancerVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
 IPoolAddressesProvider constant AAVE_ADDRESS_PROVIDER = IPoolAddressesProvider(0x36616cf17557639614c1cdDb356b1B83fc0B2132);
@@ -45,7 +45,7 @@ ISavingsXDaiAdapter constant SAVINGS_X_DAI_ADAPTER = ISavingsXDaiAdapter(0xD499b
 
 /// @title Ariadne sDAI duplicator
 
-contract SDD is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
+contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
     /// @notice The minimum amount of wxDAI to deposit.
     uint256 public minDepositAmount;
 
@@ -72,13 +72,13 @@ contract SDD is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
     event PositionClose(uint256 finalBalanceWxdai);
 
     /// @notice This event is emitted when a withdrawal takes place
-    /// @param amount The DND withdrawal amount requested by user
+    /// @param amount The Asdai withdrawal amount requested by user
     /// @param amountWxdai The actual amnount of wxDAI that has been withdrawn from the position
     event PositionWithdraw(uint256 amount, uint256 amountWxdai, address user);
 
     /// @notice This event is emitted when a deposit takes place
     /// @param amountWxdai The actual amnount of wxDAI that has been deposited into the position
-    /// @param amount The amount of DND minted
+    /// @param amount The amount of Asdai minted
     event PositionDeposit(uint256 amountWxdai, uint256 amount, address user);
 
     /// @notice Actual constructor of this upgradeable contract
@@ -104,14 +104,14 @@ contract SDD is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
 
     modifier whenFlagNotSet(uint8 whatExactly) {
         if ((flags & whatExactly) == whatExactly) {
-            revert DNDOperationDisabledByFlags();
+            revert AsdaiOperationDisabledByFlags();
         }
         _;
     }
 
     modifier onlyBalancerVault() {
         if (msg.sender != address(BALANCER_VAULT)) {
-            revert DNDOnlyFlashloanLender();
+            revert AsdaiOnlyFlashloanLender();
         }
         _;
     }
@@ -124,7 +124,7 @@ contract SDD is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         whenFlagNotSet(FLAGS_POSITION_CLOSED)
     {
         if (amount == 0 || amount < minDepositAmount || amount > maxDepositAmount) {
-            revert DNDIncorrectDepositOrWithdrawalAmount();
+            revert AsdaiIncorrectDepositOrWithdrawalAmount();
         }
 
         uint256 wxdaiPrice = oracle().getAssetPrice(address(wxdai));
@@ -161,13 +161,13 @@ contract SDD is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     /// @notice Withdraw from vault
-    /// @param amount The amount of DND to withdraw
+    /// @param amount The amount of Asdai to withdraw
     function withdraw(uint256 amount)
         public
         whenFlagNotSet(FLAGS_WITHDRAW_PAUSED)
     {
-        if (amount < MIN_DND_AMOUNT_TO_WITHDRAW || amount > balanceOf(msg.sender)) {
-            revert DNDIncorrectDepositOrWithdrawalAmount();
+        if (amount < MIN_ASDAI_AMOUNT_TO_WITHDRAW || amount > balanceOf(msg.sender)) {
+            revert AsdaiIncorrectDepositOrWithdrawalAmount();
         }
 
         if (flags & FLAGS_POSITION_CLOSED == FLAGS_POSITION_CLOSED) {
@@ -216,7 +216,7 @@ contract SDD is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
             (, , availableBorrowsBase, , ,) = _pool.getUserAccountData(address(this));
             if (availableBorrowsBase < minimumDustAmount) {
                 if (i == 0 && shouldRevertOnFirst) {
-                    revert DNDRebalanceNotNeccessary();
+                    revert AsdaiRebalanceNotNeccessary();
                 }
 
                 return;
@@ -292,7 +292,7 @@ contract SDD is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         onlyBalancerVault
     {
         if (tokens.length != 1 || tokens[0] != address(wxdai)) {
-            revert DNDIncorrectFlashloanTokenReceived();
+            revert AsdaiIncorrectFlashloanTokenReceived();
         }
 
         (uint8 mode) = abi.decode(userData, (uint8));
@@ -318,7 +318,7 @@ contract SDD is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
             uint256 availableBorrowsWxdai = convertBaseToWxdai(availableBorrowsBase, wxdaiPrice);
 
             if (availableBorrowsWxdai < amounts[0]) {
-                revert DNDNotEnoughToBorrow();
+                revert AsdaiNotEnoughToBorrow();
             }
 
             pool().borrow(address(wxdai), amounts[0], AAVE_INTEREST_RATE_MODE_VARIABLE, 0, address(this));
@@ -353,7 +353,7 @@ contract SDD is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
             wxdai.transfer(address(BALANCER_VAULT), amounts[0]);
 
         } else {
-            revert DNDUnknownFlashloanMode();
+            revert AsdaiUnknownFlashloanMode();
         }
     }
 
