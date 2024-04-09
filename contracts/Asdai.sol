@@ -134,12 +134,12 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         uint256 idealTotalCollateral = wxdaiAmount * 100000 / (100000 - idealLtv);
         uint256 amountToFlashLoan = idealTotalCollateral - wxdaiAmount;
 
-        uint256 totalBalanceBaseBefore = totalBalanceBase();
+        uint256 totalBalanceBaseBefore = _totalBalanceBase();
 
         bytes memory userData = abi.encode(FLASH_LOAN_MODE_DEPOSIT, wxdaiPrice);
         _doFlashLoan(address(wxdai()), amountToFlashLoan, userData);
 
-        uint256 totalBalanceBaseAfter = totalBalanceBase();
+        uint256 totalBalanceBaseAfter = _totalBalanceBase();
 
         // Difference between 8 decimals for Aave base currency and 18 decimals for Asdai
         // is 10^10
@@ -182,8 +182,7 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         view
         returns (uint256)
     {
-        (uint256 totalCollateralBase, uint256 totalDebtBase, , , ,) = pool().getUserAccountData(address(this));
-        return totalCollateralBase - totalDebtBase;
+        return _totalBalanceBase();
     }
 
     function rebalance()
@@ -455,6 +454,15 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
     {
         DataTypes.ReserveConfigurationMap memory poolConfiguration = pool().getConfiguration(address(sdai()));
         return poolConfiguration.data & EXTRACT_LTV_FROM_POOL_CONFIGURATION_DATA_MASK;
+    }
+
+    function _totalBalanceBase()
+        internal
+        view
+        returns (uint256)
+    {
+        (uint256 totalCollateralBase, uint256 totalDebtBase, , , ,) = pool().getUserAccountData(address(this));
+        return totalCollateralBase - totalDebtBase;
     }
 
     function convertBaseToSdai(uint256 amount, uint256 sdaiPrice)
