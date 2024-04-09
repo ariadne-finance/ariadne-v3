@@ -107,14 +107,14 @@ describe("Asdai", function() {
     await asdai.deposit(HUNDRED);
 
     let balance = await asdai.balanceOf(myAccount.address);
-    expect(balance).to.be.withinPercent(wxdaiPrice * 100n, 1);
+    expect(balance).to.be.withinPercent(wxdaiPrice * 100n * 10n ** 10n, 1);
     expect(await asdai.totalBalanceBase()).to.be.withinPercent(wxdaiPrice * 100n, 1);
 
     const firstWithdraw = balance / 3n;
 
     await asdai.withdraw(firstWithdraw);
 
-    expect(await asdai.balanceOf(myAccount.address)).to.be.withinPercent(wxdaiPrice * 100n / 3n * 2n, 1);
+    expect(await asdai.balanceOf(myAccount.address)).to.be.withinPercent(wxdaiPrice * 100n / 3n * 2n * 10n ** 10n, 1);
     expect(await asdai.totalBalanceBase()).to.be.withinPercent(wxdaiPrice * 100n / 3n * 2n, 1);
 
     expect(await wxdai.balanceOf(myAccount.address)).to.be.withinPercent(HUNDRED / 3n, 1);
@@ -189,7 +189,7 @@ describe("Asdai", function() {
     });
 
     function correctWxdaiAmount(x) {
-      return x >= (wxdaiPrice * 100n / 100n * 99n) && x <= (wxdaiPrice * 100n / 100n * 101n);
+      return x >= (wxdaiPrice * 100n * 10n ** 10n / 100n * 99n) && x <= (wxdaiPrice * 100n * 10n ** 10n / 100n * 101n);
     }
 
     await expect(asdai.deposit(HUNDRED)).to.emit(asdai, 'PositionDeposit')
@@ -376,6 +376,8 @@ describe("Asdai", function() {
 
     await asdai.deposit(HUNDRED);
 
+    const myBalanceAfterDeposit = await asdai.balanceOf(myAccount.address);
+
     await wxdai.connect(secondAccount).approve(await asdai.getAddress(), 2n ** 256n - 1n);
 
     await secondAccount.sendTransaction({
@@ -385,20 +387,17 @@ describe("Asdai", function() {
 
     await asdai.connect(secondAccount).deposit(HUNDRED * 2n);
 
-    const myBalanceAfterDeposit = await asdai.balanceOf(myAccount.address);
-
-    expect(myBalanceAfterDeposit).to.be.withinPercent(wxdaiPrice * 100n, 1);
-    expect(await asdai.balanceOf(secondAccount.address)).to.be.withinPercent(wxdaiPrice * 2n * 100n, 1);
+    expect(await asdai.balanceOf(secondAccount.address)).to.be.withinPercent(wxdaiPrice * 2n * 100n * 10n ** 10n, 1);
     expect(await asdai.totalBalanceBase()).to.be.withinPercent(wxdaiPrice * 3n * 100n, 1);
 
-    expect(await asdai.totalSupply()).to.be.withinPercent(wxdaiPrice * 3n * 100n, 1);
+    expect(await asdai.totalSupply()).to.be.withinPercent(wxdaiPrice * 3n * 100n * 10n ** 10n, 1);
 
     await asdai.withdraw(myBalanceAfterDeposit);
 
     expect(await wxdai.balanceOf(myAccount.address)).to.be.withinPercent(HUNDRED, 1);
 
     expect(await asdai.balanceOf(myAccount.address)).to.be.eq(0);
-    expect(await asdai.balanceOf(secondAccount.address)).to.be.withinPercent(wxdaiPrice * 2n * 100n, 1);
+    expect(await asdai.balanceOf(secondAccount.address)).to.be.withinPercent(wxdaiPrice * 2n * 100n * 10n ** 10n, 1);
     expect(await asdai.totalBalanceBase()).to.be.withinPercent(wxdaiPrice * 2n * 100n, 1);
   });
 

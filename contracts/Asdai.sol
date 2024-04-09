@@ -141,12 +141,15 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
 
         uint256 totalBalanceBaseAfter = totalBalanceBase();
 
-        uint256 minted = totalBalanceBaseAfter;
+        // Difference between 8 decimals for Aave base currency and 18 decimals for Asdai
+        // is 10^10
+        uint256 minted = totalBalanceBaseAfter * 10 ** 10;
 
         if (totalSupply() > 0) {
             uint256 totalBalanceAddedPercent = Math.mulDiv(totalBalanceBaseAfter, 10e18, totalBalanceBaseBefore) - 10e18;
             minted = Math.mulDiv(totalSupply(), totalBalanceAddedPercent, 10e18);
         }
+
         assert(minted > 0);
 
         _mint(msg.sender, minted);
