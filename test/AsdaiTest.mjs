@@ -319,7 +319,7 @@ describe("Asdai", function() {
     const aboutOneGreenback = v => v >= HUNDRED / 100n * 98n && v <= HUNDRED / 100n * 102n;
 
     await expect(asdai.connect(ownerAccount).closePosition()).to.emit(asdai, 'PositionClose').withArgs(aboutOneGreenback);
-    expect(await wxdai.balanceOf(await asdai.getAddress())).to.be.withinPercent(ONE* 100n, 1);
+    expect(await wxdai.balanceOf(await asdai.getAddress())).to.be.withinPercent(ONE * 100n, 1);
   });
 
   it("disallow deposit after close position", async () => {
@@ -366,6 +366,7 @@ describe("Asdai", function() {
 
     expect(await asdai.totalSupply()).to.be.eq(0);
     expect(await asdai.totalBalanceBase()).to.be.withinPercent(0, 1);
+    // FIXME check for event
   });
 
   it("multiple users", async () => {
