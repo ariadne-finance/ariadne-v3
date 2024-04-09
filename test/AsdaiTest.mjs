@@ -123,11 +123,11 @@ describe("Asdai", function() {
 
     await log();
 
-    let asdaiBalance = await asdai.balanceOf(myAccount.address);
+    const asdaiBalance = await asdai.balanceOf(myAccount.address);
     console.log('             balance', ethers.formatUnits(asdaiBalance, 18));
 
-    let asdaiTotalSupply = await asdai.totalSupply();
-    let totalBalanceBase = await asdai.totalBalanceBase();
+    const asdaiTotalSupply = await asdai.totalSupply();
+    const totalBalanceBase = await asdai.totalBalanceBase();
 
     console.log('         totalSupply', ethers.formatUnits(asdaiTotalSupply, 18));
     console.log('    totalBalanceBase', ethers.formatUnits(totalBalanceBase, 8));
