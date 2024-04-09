@@ -257,8 +257,9 @@ contract SDD is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         uint256 repayDebtBase = Math.mulDiv(totalDebtBase, percent, 10e18);
         uint256 repayDebtWxdai = convertBaseToWxdai(repayDebtBase, wxdaiPrice);
 
-        // FIXME what if enourmous amount left on balance?
-        repayDebtWxdai -= wxdai.balanceOf(address(this)); // we have some dust, use it
+        uint256 wxdaiDust = wxdai.balanceOf(address(this));
+        assert(wxdaiDust < repayDebtWxdai);
+        repayDebtWxdai -= wxdaiDust;
 
         bytes memory userData = abi.encode(FLASH_LOAN_MODE_WITHDRAW);
         _doFlashLoan(address(wxdai), repayDebtWxdai, userData);
