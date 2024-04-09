@@ -1,0 +1,217 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/orbitron';
+
+:root { font-family: 'Inter Variable', sans-serif; }
+
+.font-decorative { font-family: 'Orbitron Variable', sans-serif; }
+
+html {
+  overflow: hidden;
+  height: 100%;
+  font-size: 16px;
+}
+
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+.bg-pattern {
+  $bg-pattern-light: #fefefe;
+  $bg-pattern-middle: #fafafa;
+  $bg-pattern-dark: #f6f6f6;
+
+  background: linear-gradient(45deg, $bg-pattern-light 12%, transparent 0, transparent 88%, $bg-pattern-light 0),
+  linear-gradient(135deg, transparent 37%, $bg-pattern-middle 0, $bg-pattern-middle 63%, transparent 0),
+  linear-gradient(45deg, transparent 37%, $bg-pattern-light 0, $bg-pattern-light 63%, transparent 0) $bg-pattern-dark;
+  background-size: 25px 25px;
+  .dark & {
+    background:
+      linear-gradient(27deg, #151515 5px, transparent 5px) 0 5px,
+      linear-gradient(207deg, #151515 5px, transparent 5px) 10px 0px,
+      linear-gradient(27deg, #222 5px, transparent 5px) 0px 10px,
+      linear-gradient(207deg, #222 5px, transparent 5px) 10px 5px,
+      linear-gradient(90deg, #1b1b1b 10px, transparent 10px),
+      linear-gradient(#1d1d1d 25%, #1a1a1a 25%, #1a1a1a 50%, transparent 50%, transparent 75%, #242424 75%, #242424);
+    background-color: #131313;
+    background-size: 20px 20px;
+  }
+}
+
+.theme-color {
+  color: #1a1d26;
+  .dark & {
+    color: #eff1fc;
+  }
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+
+  @apply bg-pattern theme-color;
+}
+
+:root {
+  --account-center-box-shadow: rgba(0, 0, 0, 0.2) 0px 4px 16px 0px;
+  .dark {
+    --account-center-box-shadow: rgba(255, 255, 255, 0.2) 0px 4px 16px 0px;
+  }
+}
+
+@layer components {
+  .disabled, *:disabled {
+    @apply pointer-events-none opacity-70;
+  }
+
+  button.disabled, button:disabled {
+    @apply pointer-events-none bg-[#34394B] text-[#5F6167] opacity-100;
+    .bevel-border:has(&) {
+      pointer-events: none;
+    }
+    .bevel-border-flat:has(&) {
+      pointer-events: none;
+    }
+  }
+
+  .arrow-down {
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border-top: 10px solid currentColor;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+  }
+
+  .btn {
+    @apply flex items-center justify-center rounded-md px-3.5 py-2.5 text-sm font-semibold shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2;
+  }
+
+  .btn-primary {
+    @apply btn text-white bg-primary-600 hover:bg-primary-500 focus-visible:outline-primary-600;
+  }
+
+  .btn-danger {
+    @apply btn text-white bg-red-600 hover:bg-red-500 focus-visible:outline-red-600;
+  }
+
+  .btn-submit {
+    @apply bg-primary-600 hover:bg-primary-500 focus-visible:outline-primary-600 text-white rounded-[14px] px-5 h-[50px] text-sm font-semibold disabled:pointer-events-none disabled:select-none disabled:opacity-80 w-full capitalize flex items-center justify-center;
+  }
+
+  .link-dashed {
+    @apply underline decoration-dashed decoration-[0.5px] underline-offset-4 cursor-pointer decoration-[color-mix(in_srgb,currentColor_60%,transparent)] hover:decoration-current;
+  }
+
+  .link-underlined {
+    @apply underline decoration-[0.5px] underline-offset-2 cursor-pointer decoration-[color-mix(in_srgb,currentColor_60%,transparent)] hover:decoration-current;
+  }
+
+  .stats-title {
+    @apply grow text-sm font-medium leading-6 text-slate-500 dark:text-slate-400;
+  }
+
+  .stats-value {
+    @apply grow text-sm text-right font-medium leading-6 text-slate-900 dark:text-slate-300 text-ellipsis overflow-hidden;
+  }
+
+  .stats-link {
+    @apply text-ellipsis overflow-hidden underline decoration-slate-300 dark:decoration-slate-600 underline-offset-4 cursor-pointer;
+  }
+
+  .theme-background {
+    background-color: rgb(255, 255, 255);
+    .dark & {
+      background-color: rgb(26, 29, 38);
+    }
+  }
+
+  .theme-border {
+    border: rgb(194, 196, 201) 1px solid;
+    .dark & {
+      border: rgb(51, 57, 75) 1px solid;
+    }
+  }
+
+  .theme-shadow {
+    box-shadow: var(--account-center-box-shadow);
+  }
+
+  .theme-radius {
+    border-radius: 16px;
+  }
+
+  .rounded-2\.5 {
+    border-radius: 10px;
+  }
+
+  .transition-height {
+    transition: height 0.3s;
+  }
+
+  .mt-22 {
+    margin-top: 5.5rem;
+  }
+
+  footer {
+    a {
+      @apply text-slate-400 hover:text-slate-500;
+    }
+  }
+
+  .beveled {
+    clip-path: polygon(
+      0 26px,
+      26px 0,
+      100% 0,
+      100% calc(100% - 26px),
+      calc(100% - 26px) 100%,
+      0 100%
+    );
+    position:relative;
+    overflow:hidden;
+  }
+
+  .beveled-bottom {
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      100% calc(100% - 22px),
+      calc(100% - 30px) 100%,
+      22px 100%,
+      0 100%
+    );
+    position:relative;
+    overflow:hidden;
+  }
+
+  // NOTE: applied to the element container!
+  .bevel-border {
+    filter: drop-shadow(rgb(83, 91, 115) 0px 0px 1px) drop-shadow(rgba(255, 255, 255, 0.1) 0px 2px 8px);
+    &:hover, &.hover {
+      filter: drop-shadow(rgb(83, 91, 115) 0px 0px 1px) drop-shadow(rgba(255, 255, 255, 0.2) 0px 2px 8px);
+    }
+  }
+  .bevel-border-flat {
+    filter: drop-shadow(rgb(83, 91, 115) 0px 0px 1px);
+    &:hover, &.hover {
+      filter: drop-shadow(rgb(83, 91, 115) 0px 0px 1px) drop-shadow(rgba(255, 255, 255, 0.1) 0px 1px 4px);
+    }
+  }
+}
+
+.expand-height-enter-active,
+.expand-height-leave-active {
+  transition: height 3s;
+  overflow: hidden;
+}
+
+.expand-height-enter,
+.expand-height-leave-to {
+  height: 0;
+}
