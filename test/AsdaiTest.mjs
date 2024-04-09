@@ -2,6 +2,8 @@ import chai from 'chai';
 import { takeSnapshot, setBalance } from '@nomicfoundation/hardhat-network-helpers';
 import withinPercent from '../utils/chai-percent.js';
 
+import { request, gql } from 'graphql-request';
+
 const ONE = 1n * 10n ** 18n;
 const HUNDRED = ONE * 100n;
 
@@ -96,6 +98,96 @@ describe("Asdai", function() {
     console.log('                totalSupply', totalSupply);
     console.log('                    balance', balance);
   }
+
+  it.skip("playground", async () => {
+    await wxdai.connect(secondAccount).approve(asdai.address, 2n ** 256n - 1n);
+
+    await secondAccount.sendTransaction({
+      to: wxdai.address,
+      value: HUNDRED * 10n
+    });
+
+    await asdai.connect(secondAccount).deposit(HUNDRED * 10n);
+
+    await myAccount.sendTransaction({
+      to: wxdai.address,
+      value: HUNDRED
+    });
+
+    await asdai.deposit(HUNDRED);
+
+    const sdaiPrice = await aaveOracle.getAssetPrice(sdai.address);
+    await aaveOracle.setOverridePrice(sdai.address, sdaiPrice / 100n * 106n);
+
+    await asdai.rebalance();
+
+    await log();
+
+    let asdaiBalance = await asdai.balanceOf(myAccount.address);
+    console.log('             balance', ethers.formatUnits(asdaiBalance, 18));
+
+    let asdaiTotalSupply = await asdai.totalSupply();
+    let totalBalanceBase = await asdai.totalBalanceBase();
+
+    console.log('         totalSupply', ethers.formatUnits(asdaiTotalSupply, 18));
+    console.log('    totalBalanceBase', ethers.formatUnits(totalBalanceBase, 8));
+
+    const percent = asdaiBalance * 10n ** 18n / asdaiTotalSupply;
+    const asdaiBalanceBase = totalBalanceBase * percent / 10n ** 8n;
+
+    const wxdaiPrice = await aaveOracle.getAssetPrice(wxdai.address);
+
+    console.log('     my balance base', ethers.formatUnits(asdaiBalanceBase, 18));
+    console.log('         wxdai price', ethers.formatUnits(wxdaiPrice, 8));
+
+    const wxdaiBalance = asdaiBalanceBase * wxdaiPrice / 10n ** 8n;
+    console.log('    my balance wxdai', ethers.formatUnits(wxdaiBalance, 18));
+
+    const document = gql`
+    {
+      reserves {
+        name
+        underlyingAsset
+
+        liquidityRate
+        stableBorrowRate
+        variableBorrowRate
+
+
+        totalATokenSupply
+        totalCurrentVariableDebt
+      }
+    }`;
+
+    const r = await request('https://api.thegraph.com/subgraphs/name/aave/protocol-v3-gnosis', document);
+
+    const wxdaiAaveReserve = r.reserves.find(reserve => reserve.underlyingAsset === wxdai.address.toLowerCase());
+
+    const savingsXDaiAdapter = await ethers.getContractAt('ISavingsXDaiAdapter', '0xD499b51fcFc66bd31248ef4b28d656d67E591A94');
+    const vaultAPY = await savingsXDaiAdapter.vaultAPY();
+
+    const userData = await aavePool.getUserAccountData(asdai.address);
+
+    console.log("      basic sdai apy", ethers.formatUnits(vaultAPY, 16));
+
+    const collateralMultiplier = 100_000n * 10000n / (10000n - userData.ltv);
+    console.log('collateralMultiplier', ethers.formatUnits(collateralMultiplier, 5));
+
+    const sdaiAPY = collateralMultiplier * vaultAPY / 100_000n * 100n;
+    console.log('            sdai apy', ethers.formatUnits(sdaiAPY, 18));
+
+
+    console.log("    basic wxdai rate", ethers.formatUnits(wxdaiAaveReserve.variableBorrowRate, 25));
+
+    const debtMultiplier = collateralMultiplier * userData.ltv / 10000n;
+    console.log('      debtMultiplier', ethers.formatUnits(debtMultiplier, 5));
+
+    const wxdaiRate = debtMultiplier * BigInt(wxdaiAaveReserve.variableBorrowRate) / 10n ** 12n;
+    console.log('          wxdai rate', ethers.formatUnits(wxdaiRate, 18));
+
+    const apy = sdaiAPY - wxdaiRate;
+    console.log('           total apy', ethers.formatUnits(apy, 18));
+  });
 
   it("open position then withdraw", async () => {
     await myAccount.sendTransaction({
