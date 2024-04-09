@@ -37,6 +37,7 @@ describe("Asdai", function() {
 
     // to test direct deployment
     asdai = await Asdai.deploy();
+    asdai.address = await asdai.getAddress();
 
     const addressProvider = await ethers.getContractAt('IPoolAddressesProvider', AAVE_IPOOL_ADDRESSES_PROVIDER_ADDRESS);
     aavePool = await ethers.getContractAt('IPool', await addressProvider.getPool());
@@ -68,7 +69,7 @@ describe("Asdai", function() {
 
     await asdai.transferOwnership(ownerAccount.address);
 
-    await wxdai.approve(await asdai.getAddress(), 2n ** 256n - 1n);
+    await wxdai.approve(asdai.address, 2n ** 256n - 1n);
 
     snapshot = await takeSnapshot();
   });
@@ -79,9 +80,7 @@ describe("Asdai", function() {
   });
 
   async function log() {
-    const address = await asdai.getAddress();
-
-    const userData = await aavePool.getUserAccountData(address);
+    const userData = await aavePool.getUserAccountData(asdai.address);
 
     console.log('                         hf', ethers.formatUnits(userData.healthFactor, 18));
     console.log('       availableBorrowsBase', userData.availableBorrowsBase);
@@ -154,9 +153,9 @@ describe("Asdai", function() {
     const sdaiPrice = await aaveOracle.getAssetPrice(sdai.address);
     await aaveOracle.setOverridePrice(sdai.address, sdaiPrice / 100n * 101n);
 
-    const { availableBorrowsBase: availableBorrowsBaseBeforeRebalance } = await aavePool.getUserAccountData(await asdai.getAddress());
+    const { availableBorrowsBase: availableBorrowsBaseBeforeRebalance } = await aavePool.getUserAccountData(asdai.address);
     await asdai.rebalance();
-    const { availableBorrowsBase: availableBorrowsBaseAfterRebalance } = await aavePool.getUserAccountData(await asdai.getAddress());
+    const { availableBorrowsBase: availableBorrowsBaseAfterRebalance } = await aavePool.getUserAccountData(asdai.address);
 
     expect(await asdai.totalBalanceBase()).to.be.withinPercent(wxdaiPrice * 100n, 5);
     expect(availableBorrowsBaseAfterRebalance).to.be.lt(availableBorrowsBaseBeforeRebalance);
@@ -249,7 +248,7 @@ describe("Asdai", function() {
       to: wxdai.address,
       value: HUNDRED
     });
-    await wxdai.transfer(await asdai.getAddress(), ONE);
+    await wxdai.transfer(asdai.address, ONE);
     await expect(asdai.rescue(wxdai.address, myAccount.address)).to.be.revertedWithCustomError(asdai, 'OwnableUnauthorizedAccount');
   });
 
@@ -319,7 +318,7 @@ describe("Asdai", function() {
     const aboutOneGreenback = v => v >= HUNDRED / 100n * 98n && v <= HUNDRED / 100n * 102n;
 
     await expect(asdai.connect(ownerAccount).closePosition()).to.emit(asdai, 'PositionClose').withArgs(aboutOneGreenback);
-    expect(await wxdai.balanceOf(await asdai.getAddress())).to.be.withinPercent(ONE * 100n, 1);
+    expect(await wxdai.balanceOf(asdai.address)).to.be.withinPercent(ONE * 100n, 1);
   });
 
   it("disallow deposit after close position", async () => {
@@ -361,7 +360,7 @@ describe("Asdai", function() {
     const myBalance = await asdai.balanceOf(myAccount.address);
     await asdai.withdraw(myBalance);
 
-    expect(await wxdai.balanceOf(await asdai.getAddress())).to.be.lt(10);
+    expect(await wxdai.balanceOf(asdai.address)).to.be.lt(10);
     expect(await wxdai.balanceOf(myAccount.address)).to.be.withinPercent(HUNDRED, 1);
 
     expect(await asdai.totalSupply()).to.be.eq(0);
@@ -379,7 +378,7 @@ describe("Asdai", function() {
 
     const myBalanceAfterDeposit = await asdai.balanceOf(myAccount.address);
 
-    await wxdai.connect(secondAccount).approve(await asdai.getAddress(), 2n ** 256n - 1n);
+    await wxdai.connect(secondAccount).approve(asdai.address, 2n ** 256n - 1n);
 
     await secondAccount.sendTransaction({
       to: wxdai.address,
