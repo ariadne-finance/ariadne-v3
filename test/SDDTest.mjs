@@ -11,10 +11,12 @@ const expect = chai.expect;
 const FLAGS_DEPOSIT_PAUSED  = 1 << 1;
 const FLAGS_WITHDRAW_PAUSED = 1 << 2;
 
-describe("SDD", function() {
-  let snapshot, initialSnapshot;
+const AAVE_IPOOL_ADDRESSES_PROVIDER_ADDRESS = '0x36616cf17557639614c1cdDb356b1B83fc0B2132';
 
-  let myAccount, secondAccount, ownerAccount, liquidatorAccount;
+describe("SDD", function() {
+  let snapshot;
+
+  let myAccount, secondAccount, ownerAccount;
 
   let sdai, wxdai;
 
@@ -23,12 +25,9 @@ describe("SDD", function() {
   let aaveOracle;
 
   let wxdaiPrice;
-  let sdaiPrice;
 
   before(async () => {
-    initialSnapshot = await takeSnapshot();
-
-    [ myAccount, secondAccount, ownerAccount, liquidatorAccount ] = await hre.ethers.getSigners();
+    [ myAccount, secondAccount, ownerAccount ] = await hre.ethers.getSigners();
 
     const SDD = await ethers.getContractFactory('SDD');
     // to test proxies:
@@ -37,9 +36,7 @@ describe("SDD", function() {
     // to test direct deployment
     sdd = await SDD.deploy();
 
-    let addressProvider;
-
-    addressProvider = await ethers.getContractAt('IPoolAddressesProvider', '0x36616cf17557639614c1cdDb356b1B83fc0B2132');
+    const addressProvider = await ethers.getContractAt('IPoolAddressesProvider', AAVE_IPOOL_ADDRESSES_PROVIDER_ADDRESS);
     aavePool = await ethers.getContractAt('IPool', await addressProvider.getPool());
 
     const MockAaveOracle = await ethers.getContractFactory('MockAaveOracle');
@@ -65,8 +62,7 @@ describe("SDD", function() {
     wxdai = await ethers.getContractAt('IERC20Metadata', await sdd.wxdai());
     wxdai.address = await wxdai.getAddress();
 
-    wxdaiPrice = await aaveOracle.getAssetPrice(await wxdai.getAddress());
-    sdaiPrice = await aaveOracle.getAssetPrice(await sdai.getAddress());
+    wxdaiPrice = await aaveOracle.getAssetPrice(wxdai.address);
 
     await sdd.transferOwnership(ownerAccount.address);
 
@@ -74,8 +70,6 @@ describe("SDD", function() {
 
     snapshot = await takeSnapshot();
   });
-
-  after(async () => initialSnapshot.restore());
 
   afterEach("Revert snapshot after test", async () => {
     await snapshot.restore();
@@ -104,7 +98,7 @@ describe("SDD", function() {
 
   it("open position then withdraw", async () => {
     await myAccount.sendTransaction({
-      to: await wxdai.getAddress(),
+      to: wxdai.address,
       value: HUNDRED
     });
 
@@ -133,7 +127,7 @@ describe("SDD", function() {
 
   it("sDai price up", async () => {
     await myAccount.sendTransaction({
-      to: await wxdai.getAddress(),
+      to: wxdai.address,
       value: HUNDRED
     });
 
@@ -141,20 +135,22 @@ describe("SDD", function() {
 
     expect(await sdd.totalBalanceBase()).to.be.withinPercent(wxdaiPrice * 100n, 1);
 
-    await aaveOracle.setOverridePrice(await sdai.getAddress(), sdaiPrice / 100n * 101n);
+    const sdaiPrice = await aaveOracle.getAssetPrice(sdai.address);
+    await aaveOracle.setOverridePrice(sdai.address, sdaiPrice / 100n * 101n);
 
     expect(await sdd.totalBalanceBase()).to.be.withinPercent(wxdaiPrice * 100n, 5);
   });
 
   it("sDai price up then rebalance", async () => {
     await myAccount.sendTransaction({
-      to: await wxdai.getAddress(),
+      to: wxdai.address,
       value: HUNDRED
     });
 
     await sdd.deposit(HUNDRED);
 
-    await aaveOracle.setOverridePrice(await sdai.getAddress(), sdaiPrice / 100n * 101n);
+    const sdaiPrice = await aaveOracle.getAssetPrice(sdai.address);
+    await aaveOracle.setOverridePrice(sdai.address, sdaiPrice / 100n * 101n);
 
     const { availableBorrowsBase: availableBorrowsBaseBeforeRebalance } = await aavePool.getUserAccountData(await sdd.getAddress());
     await sdd.rebalance();
@@ -166,7 +162,7 @@ describe("SDD", function() {
 
   it("withdraw must emit events", async () => {
     await myAccount.sendTransaction({
-      to: await wxdai.getAddress(),
+      to: wxdai.address,
       value: HUNDRED
     });
 
@@ -186,7 +182,7 @@ describe("SDD", function() {
 
   it("deposit must emit events", async () => {
     await myAccount.sendTransaction({
-      to: await wxdai.getAddress(),
+      to: wxdai.address,
       value: HUNDRED
     });
 
@@ -200,7 +196,7 @@ describe("SDD", function() {
 
   it("transfer tokens", async () => {
     await myAccount.sendTransaction({
-      to: await wxdai.getAddress(),
+      to: wxdai.address,
       value: HUNDRED
     });
 
@@ -218,7 +214,7 @@ describe("SDD", function() {
 
   it("withdraw more than balance", async () => {
     await myAccount.sendTransaction({
-      to: await wxdai.getAddress(),
+      to: wxdai.address,
       value: HUNDRED
     });
 
@@ -230,7 +226,7 @@ describe("SDD", function() {
 
   it("only owner can close position", async () => {
     await myAccount.sendTransaction({
-      to: await wxdai.getAddress(),
+      to: wxdai.address,
       value: HUNDRED
     });
 
@@ -248,16 +244,16 @@ describe("SDD", function() {
 
   it("only owner can rescue tokens", async () => {
     await myAccount.sendTransaction({
-      to: await wxdai.getAddress(),
+      to: wxdai.address,
       value: HUNDRED
     });
     await wxdai.transfer(await sdd.getAddress(), ONE);
-    await expect(sdd.rescue(await wxdai.getAddress(), myAccount.address)).to.be.revertedWithCustomError(sdd, "OwnableUnauthorizedAccount");
+    await expect(sdd.rescue(wxdai.address, myAccount.address)).to.be.revertedWithCustomError(sdd, "OwnableUnauthorizedAccount");
   });
 
   it("caps are respected", async () => {
     await myAccount.sendTransaction({
-      to: await wxdai.getAddress(),
+      to: wxdai.address,
       value: HUNDRED * 2n
     });
 
@@ -273,7 +269,7 @@ describe("SDD", function() {
 
   it("cannot deposit when flags disabled", async () => {
     await myAccount.sendTransaction({
-      to: await wxdai.getAddress(),
+      to: wxdai.address,
       value: HUNDRED * 10n
     });
 
@@ -292,7 +288,7 @@ describe("SDD", function() {
 
   it("cannot withdraw when flags disabled", async () => {
     await myAccount.sendTransaction({
-      to: await wxdai.getAddress(),
+      to: wxdai.address,
       value: HUNDRED * 3n
     });
 
@@ -312,7 +308,7 @@ describe("SDD", function() {
 
   it("close position with balance and emit event", async () => {
     await myAccount.sendTransaction({
-      to: await wxdai.getAddress(),
+      to: wxdai.address,
       value: HUNDRED
     });
 
@@ -326,7 +322,7 @@ describe("SDD", function() {
 
   it("disallow deposit after close position", async () => {
     await myAccount.sendTransaction({
-      to: await wxdai.getAddress(),
+      to: wxdai.address,
       value: HUNDRED * 2n
     });
 
@@ -339,20 +335,20 @@ describe("SDD", function() {
 
   it("does not rebalance in case of too small percent movement", async () => {
     await myAccount.sendTransaction({
-      to: await wxdai.getAddress(),
+      to: wxdai.address,
       value: HUNDRED * 3n
     });
 
     await sdd.deposit(HUNDRED * 3n);
     await expect(sdd.rebalance()).to.be.revertedWithCustomError(sdd, "DNDRebalanceNotNeccessary");
 
-    await aaveOracle.setOverridePrice(await wxdai.getAddress(), wxdaiPrice / 10000n * 9998n);
+    await aaveOracle.setOverridePrice(wxdai.address, wxdaiPrice / 10000n * 9998n);
     await expect(sdd.rebalance()).to.be.revertedWithCustomError(sdd, "DNDRebalanceNotNeccessary");
   });
 
   it("close position then withdraw", async () => {
     await myAccount.sendTransaction({
-      to: await wxdai.getAddress(),
+      to: wxdai.address,
       value: HUNDRED
     });
 
@@ -372,7 +368,7 @@ describe("SDD", function() {
 
   it("multiple users", async () => {
     await myAccount.sendTransaction({
-      to: await wxdai.getAddress(),
+      to: wxdai.address,
       value: HUNDRED
     });
 
@@ -381,7 +377,7 @@ describe("SDD", function() {
     await wxdai.connect(secondAccount).approve(await sdd.getAddress(), 2n ** 256n - 1n);
 
     await secondAccount.sendTransaction({
-      to: await wxdai.getAddress(),
+      to: wxdai.address,
       value: HUNDRED * 2n
     });
 
@@ -411,7 +407,7 @@ describe("SDD", function() {
   });
 
   it("only balancer vault can call flash loan", async () => {
-    const tokens = [ await sdai.getAddress() ];
+    const tokens = [ sdai.address ];
     const amounts = [ 1 ];
     const feeAmounts = [ 0 ];
     const userData = ethers.encodeBytes32String('');

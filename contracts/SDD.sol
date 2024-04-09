@@ -43,7 +43,7 @@ IBalancerVault constant BALANCER_VAULT = IBalancerVault(0xBA12222222228d8Ba44595
 IPoolAddressesProvider constant AAVE_ADDRESS_PROVIDER = IPoolAddressesProvider(0x36616cf17557639614c1cdDb356b1B83fc0B2132);
 ISavingsXDaiAdapter constant SAVINGS_X_DAI_ADAPTER = ISavingsXDaiAdapter(0xD499b51fcFc66bd31248ef4b28d656d67E591A94);
 
-/// @title sDAI leverage multiplier
+/// @title Ariadne sDAI duplicator
 
 contract SDD is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
     /// @notice The minimum amount of wxDAI to deposit.
@@ -61,7 +61,6 @@ contract SDD is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
     /// @notice Binary settings for the smart contract, as specified by the FLAGS_* constants.
     uint8 public flags;
 
-    // FIXME
     uint8 private eightBitGap1; // 8 bits left here
     uint8 private eightBitGap2; // 8 bits left here
     uint8 private eightBitGap3; // 8 bits left here
@@ -87,7 +86,7 @@ contract SDD is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         public
         initializer
     {
-        __ERC20_init("Ariadne sDAI multiplier", "AsDAI");
+        __ERC20_init("Ariadne sDAI duplicator", "AsDAI");
         __Ownable_init(msg.sender);
 
         wxdai.approve(address(pool()), 2 ** 256 - 1);
@@ -97,13 +96,16 @@ contract SDD is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         sdai.approve(address(SAVINGS_X_DAI_ADAPTER), 2 ** 256 - 1);
     }
 
-    function _authorizeUpgrade(address) internal override onlyOwner {}
+    function _authorizeUpgrade(address)
+        internal
+        override
+        onlyOwner
+    {}
 
     modifier whenFlagNotSet(uint8 whatExactly) {
         if ((flags & whatExactly) == whatExactly) {
             revert DNDOperationDisabledByFlags();
         }
-
         _;
     }
 
@@ -112,6 +114,79 @@ contract SDD is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
             revert DNDOnlyFlashloanLender();
         }
         _;
+    }
+
+    /// @notice Deposit funds into vault
+    /// @param amount amount of wxDAI to deposit
+    function deposit(uint256 amount)
+        public
+        whenFlagNotSet(FLAGS_DEPOSIT_PAUSED)
+        whenFlagNotSet(FLAGS_POSITION_CLOSED)
+    {
+        if (amount == 0 || amount < minDepositAmount || amount > maxDepositAmount) {
+            revert DNDIncorrectDepositOrWithdrawalAmount();
+        }
+
+        uint256 wxdaiPrice = oracle().getAssetPrice(address(wxdai));
+        _rebalance(wxdaiPrice, false);
+
+        wxdai.transferFrom(msg.sender, address(this), amount);
+
+        // any dust left after rebalance() goes to the next investor
+        uint256 wxdaiAmount = wxdai.balanceOf(address(this));
+
+        uint256 idealLtv = ltv() * 10 - 1; // just a tiny bit leeway
+
+        uint256 idealTotalCollateral = wxdaiAmount * 100000 / (100000 - idealLtv);
+        uint256 amountToFlashLoan = idealTotalCollateral - wxdaiAmount;
+
+        uint256 totalBalanceBaseBefore = totalBalanceBase();
+
+        bytes memory userData = abi.encode(FLASH_LOAN_MODE_DEPOSIT, wxdaiPrice);
+        _doFlashLoan(address(wxdai), amountToFlashLoan, userData);
+
+        uint256 totalBalanceBaseAfter = totalBalanceBase();
+
+        uint256 minted = totalBalanceBaseAfter;
+
+        if (totalSupply() > 0) {
+            uint256 totalBalanceAddedPercent = Math.mulDiv(totalBalanceBaseAfter, 10e18, totalBalanceBaseBefore) - 10e18;
+            minted = Math.mulDiv(totalSupply(), totalBalanceAddedPercent, 10e18);
+        }
+        assert(minted > 0);
+
+        _mint(msg.sender, minted);
+
+        emit PositionDeposit(amount, minted, msg.sender);
+    }
+
+    /// @notice Withdraw from vault
+    /// @param amount The amount of DND to withdraw
+    function withdraw(uint256 amount)
+        public
+        whenFlagNotSet(FLAGS_WITHDRAW_PAUSED)
+    {
+        if (amount < MIN_DND_AMOUNT_TO_WITHDRAW || amount > balanceOf(msg.sender)) {
+            revert DNDIncorrectDepositOrWithdrawalAmount();
+        }
+
+        if (flags & FLAGS_POSITION_CLOSED == FLAGS_POSITION_CLOSED) {
+            _withdrawClosed(amount);
+            return;
+        }
+
+        _withdrawOpen(amount);
+    }
+
+    /// @notice Returns the Total Value Locked (TVL) in the Vault
+    /// @return The TVL represented in Aave's base currency
+    function totalBalanceBase()
+        public
+        view
+        returns (uint256)
+    {
+        (uint256 totalCollateralBase, uint256 totalDebtBase, , , ,) = pool().getUserAccountData(address(this));
+        return totalCollateralBase - totalDebtBase;
     }
 
     function rebalance()
@@ -153,6 +228,57 @@ contract SDD is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
             SAVINGS_X_DAI_ADAPTER.deposit(wxdai.balanceOf(address(this)), address(this));
             _pool.supply(address(sdai), sdai.balanceOf(address(this)), address(this), 0);
         }
+    }
+
+    function _withdrawClosed(uint256 amount)
+        internal
+    {
+        uint256 percent = Math.mulDiv(amount, 10e18, totalSupply());
+        assert(percent > 0);
+
+        uint256 wxdaiReturnAmount = Math.mulDiv(wxdai.balanceOf(address(this)), percent, 10e18);
+
+        _burn(msg.sender, amount);
+        wxdai.transfer(msg.sender, wxdaiReturnAmount);
+    }
+
+    function _withdrawOpen(uint256 amount)
+        internal
+    {
+        uint256 wxdaiPrice = oracle().getAssetPrice(address(wxdai));
+        _rebalance(wxdaiPrice, false);
+
+        uint256 percent = Math.mulDiv(amount, 10e18, totalSupply());
+        assert(percent > 0);
+
+        _burn(msg.sender, amount);
+
+        (, uint256 totalDebtBase, , , ,) = pool().getUserAccountData(address(this));
+        uint256 repayDebtBase = Math.mulDiv(totalDebtBase, percent, 10e18);
+        uint256 repayDebtWxdai = convertBaseToWxdai(repayDebtBase, wxdaiPrice);
+
+        // FIXME what if enourmous amount left on balance?
+        repayDebtWxdai -= wxdai.balanceOf(address(this)); // we have some dust, use it
+
+        bytes memory userData = abi.encode(FLASH_LOAN_MODE_WITHDRAW);
+        _doFlashLoan(address(wxdai), repayDebtWxdai, userData);
+
+        uint256 wxdaiBalance = wxdai.balanceOf(address(this));
+        wxdai.transfer(msg.sender, wxdaiBalance);
+
+        emit PositionWithdraw(amount, wxdaiBalance, msg.sender);
+    }
+
+    function _doFlashLoan(address token, uint256 amount, bytes memory userData)
+        internal
+    {
+        IERC20[] memory tokens = new IERC20[](1);
+        tokens[0] = IERC20(token);
+
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = amount;
+
+        BALANCER_VAULT.flashLoan(address(this), tokens, amounts, userData);
     }
 
     function receiveFlashLoan(
@@ -230,161 +356,14 @@ contract SDD is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         }
     }
 
-    /// @notice Deposit funds into vault
-    /// @param amount amount of wxDAI to deposit
-    function deposit(uint256 amount)
-        public
-        whenFlagNotSet(FLAGS_DEPOSIT_PAUSED)
-        whenFlagNotSet(FLAGS_POSITION_CLOSED)
-    {
-        if (amount == 0 || amount < minDepositAmount || amount > maxDepositAmount) {
-            revert DNDIncorrectDepositOrWithdrawalAmount();
-        }
-
-        uint256 wxdaiPrice = oracle().getAssetPrice(address(wxdai));
-        _rebalance(wxdaiPrice, false);
-
-        wxdai.transferFrom(msg.sender, address(this), amount);
-
-        // any dust left after rebalance() goes to the next investor
-        uint256 wxdaiAmount = wxdai.balanceOf(address(this));
-
-        uint256 idealLtv = ltv() * 10 - 1; // just a tiny bit leeway
-
-        uint256 idealTotalCollateral = wxdaiAmount * 100000 / (100000 - idealLtv);
-        uint256 amountToFlashLoan = idealTotalCollateral - wxdaiAmount;
-
-        uint256 totalBalanceBaseBefore = totalBalanceBase();
-
-        bytes memory userData = abi.encode(FLASH_LOAN_MODE_DEPOSIT, wxdaiPrice);
-        doFlashLoan(address(wxdai), amountToFlashLoan, userData);
-
-        uint256 totalBalanceBaseAfter = totalBalanceBase();
-
-        uint256 minted = totalBalanceBaseAfter;
-
-        if (totalSupply() > 0) {
-            uint256 totalBalanceAddedPercent = Math.mulDiv(totalBalanceBaseAfter, 10e18, totalBalanceBaseBefore) - 10e18;
-            minted = Math.mulDiv(totalSupply(), totalBalanceAddedPercent, 10e18);
-        }
-        assert(minted > 0);
-
-        _mint(msg.sender, minted);
-
-        emit PositionDeposit(amount, minted, msg.sender);
-    }
-
-    /// @notice Closes the entire position, repaying all debt, withdrawing all collateral from Aave and deactivating the contract.
-    /// Only accessible by the contract owner when the position hasn't been already closed.
-    function closePosition()
-        public
-        whenFlagNotSet(FLAGS_POSITION_CLOSED)
-        onlyOwner
-    {
-        flags = flags | FLAGS_POSITION_CLOSED;
-
-        uint256 wxdaiPrice = oracle().getAssetPrice(address(wxdai));
-        _rebalance(wxdaiPrice, false);
-
-        (, uint256 totalDebtBase, , , ,) = pool().getUserAccountData(address(this));
-        uint256 repayDebtWxdai = convertBaseToWxdai(totalDebtBase, wxdaiPrice) / 100 * 103;
-
-        bytes memory userData = abi.encode(FLASH_LOAN_MODE_CLOSE);
-        doFlashLoan(address(wxdai), repayDebtWxdai, userData);
-
-        emit PositionClose(wxdai.balanceOf(address(this)));
-    }
-
-    function withdrawClosed(uint256 amount)
-        internal
-    {
-        uint256 percent = Math.mulDiv(amount, 10e18, totalSupply());
-        assert(percent > 0);
-
-        uint256 wxdaiReturnAmount = Math.mulDiv(wxdai.balanceOf(address(this)), percent, 10e18);
-
-        _burn(msg.sender, amount);
-        wxdai.transfer(msg.sender, wxdaiReturnAmount);
-    }
-
-
-    /// @notice Withdraw from vault
-    /// @param amount The amount of DND to withdraw
-    function withdraw(uint256 amount)
-        public
-        whenFlagNotSet(FLAGS_WITHDRAW_PAUSED)
-    {
-        if (amount < MIN_DND_AMOUNT_TO_WITHDRAW || amount > balanceOf(msg.sender)) {
-            revert DNDIncorrectDepositOrWithdrawalAmount();
-        }
-
-        if (flags & FLAGS_POSITION_CLOSED == FLAGS_POSITION_CLOSED) {
-            withdrawClosed(amount);
-            return;
-        }
-
-        uint256 wxdaiPrice = oracle().getAssetPrice(address(wxdai));
-        _rebalance(wxdaiPrice, false);
-
-        uint256 percent = Math.mulDiv(amount, 10e18, totalSupply());
-        assert(percent > 0);
-
-        _burn(msg.sender, amount);
-
-        (, uint256 totalDebtBase, , , ,) = pool().getUserAccountData(address(this));
-        uint256 repayDebtBase = Math.mulDiv(totalDebtBase, percent, 10e18);
-        uint256 repayDebtWxdai = convertBaseToWxdai(repayDebtBase, wxdaiPrice);
-
-        // FIXME what if enourmous amount left on balance?
-        repayDebtWxdai -= wxdai.balanceOf(address(this)); // we have some dust, use it
-
-        bytes memory userData = abi.encode(FLASH_LOAN_MODE_WITHDRAW);
-        doFlashLoan(address(wxdai), repayDebtWxdai, userData);
-
-        uint256 wxdaiBalance = wxdai.balanceOf(address(this));
-        wxdai.transfer(msg.sender, wxdaiBalance);
-
-        emit PositionWithdraw(amount, wxdaiBalance, msg.sender);
-    }
-
-    /// @notice Returns the Total Value Locked (TVL) in the Vault
-    /// @return The TVL represented in Aave's base currency
-    function totalBalanceBase() public view returns (uint256) {
-        (uint256 totalCollateralBase, uint256 totalDebtBase, , , ,) = pool().getUserAccountData(address(this));
-        return totalCollateralBase - totalDebtBase;
-    }
-
-    function doFlashLoan(address token, uint256 amount, bytes memory userData) internal {
-        IERC20[] memory tokens = new IERC20[](1);
-        tokens[0] = IERC20(token);
-
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = amount;
-
-        BALANCER_VAULT.flashLoan(address(this), tokens, amounts, userData);
-    }
-
-    function convertBaseToSdai(uint256 amount, uint256 sdaiPrice) internal pure returns (uint256) {
-        return Math.mulDiv(amount, 10 ** 18, sdaiPrice);
-    }
-
-    // function convertSdaiToBase(uint256 amount, uint256 sdaiPrice) internal pure returns (uint256) {
-    //     return Math.mulDiv(amount, sdaiPrice, 10 ** 18);
-    // }
-
-    function convertBaseToWxdai(uint256 amount, uint256 wxdaiPrice) internal pure returns (uint256) {
-        return Math.mulDiv(amount, 10 ** 18, wxdaiPrice);
-    }
-
-    // function convertWxdaiToBase(uint256 amount, uint256 wxdaiPrice) internal pure returns (uint256) {
-    //     return Math.mulDiv(amount, wxdaiPrice, 10 ** 18);
-    // }
-
     /// @notice Allows the contract owner to recover misplaced tokens.
     /// The function can only be invoked by the contract owner.
     /// @param token An address of token contractfrom which tokens will be collected.
     /// @param to The recipient address where all retrieved tokens will be transferred.
-    function rescue(address token, address to) public onlyOwner {
+    function rescue(address token, address to)
+        public
+        onlyOwner
+    {
         // note: no zero-balance assertions or protections, we assume the owner knows what is he doing
         if (token == address(0)) {
             payable(to).transfer(address(this).balance);
@@ -408,21 +387,81 @@ contract SDD is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         flags = _flags;
     }
 
-    function ltv() internal view returns (uint256) {
+    /// @notice Closes the entire position, repaying all debt, withdrawing all collateral from Aave and deactivating the contract.
+    /// Only accessible by the contract owner when the position hasn't been already closed.
+    function closePosition()
+        public
+        whenFlagNotSet(FLAGS_POSITION_CLOSED)
+        onlyOwner
+    {
+        flags = flags | FLAGS_POSITION_CLOSED;
+
+        uint256 wxdaiPrice = oracle().getAssetPrice(address(wxdai));
+        _rebalance(wxdaiPrice, false);
+
+        (, uint256 totalDebtBase, , , ,) = pool().getUserAccountData(address(this));
+        uint256 repayDebtWxdai = convertBaseToWxdai(totalDebtBase, wxdaiPrice) / 100 * 103;
+
+        bytes memory userData = abi.encode(FLASH_LOAN_MODE_CLOSE);
+        _doFlashLoan(address(wxdai), repayDebtWxdai, userData);
+
+        emit PositionClose(wxdai.balanceOf(address(this)));
+    }
+
+    function pool()
+        internal
+        view
+        returns (IPool)
+    {
+        return IPool(AAVE_ADDRESS_PROVIDER.getPool());
+    }
+
+    function oracle()
+        internal
+        view
+        returns (IAaveOracle)
+    {
+        return IAaveOracle(AAVE_ADDRESS_PROVIDER.getPriceOracle());
+    }
+
+    function ltv()
+        internal
+        view
+        returns (uint256)
+    {
         DataTypes.ReserveConfigurationMap memory poolConfiguration = pool().getConfiguration(address(sdai));
         return poolConfiguration.data & EXTRACT_LTV_FROM_POOL_CONFIGURATION_DATA_MASK;
     }
 
-    /// @notice ERC20 method
-    function decimals() public view virtual override returns (uint8) {
-        return 18;
+    function convertBaseToSdai(uint256 amount, uint256 sdaiPrice)
+        internal
+        pure
+        returns (uint256)
+    {
+        return Math.mulDiv(amount, 10 ** 18, sdaiPrice);
     }
 
-    function pool() internal view returns (IPool) {
-        return IPool(AAVE_ADDRESS_PROVIDER.getPool());
+    // function convertSdaiToBase(uint256 amount, uint256 sdaiPrice)
+    //     internal
+    //     pure
+    //     returns (uint256)
+    // {
+    //     return Math.mulDiv(amount, sdaiPrice, 10 ** 18);
+    // }
+
+    function convertBaseToWxdai(uint256 amount, uint256 wxdaiPrice)
+        internal
+        pure
+        returns (uint256)
+    {
+        return Math.mulDiv(amount, 10 ** 18, wxdaiPrice);
     }
 
-    function oracle() internal view returns (IAaveOracle) {
-        return IAaveOracle(AAVE_ADDRESS_PROVIDER.getPriceOracle());
-    }
+    // function convertWxdaiToBase(uint256 amount, uint256 wxdaiPrice)
+    //     internal
+    //     pure
+    //     returns (uint256)
+    // {
+    //     return Math.mulDiv(amount, wxdaiPrice, 10 ** 18);
+    // }
 }
