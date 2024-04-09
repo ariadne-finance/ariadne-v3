@@ -52,12 +52,6 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
     /// @notice The maximum amount of wxDAI to deposit.
     uint256 public maxDepositAmount;
 
-    /// @notice Address of the sDAI token used as collateral in Aave by this contract.
-    IERC20 public constant sdai = IERC20(0xaf204776c7245bF4147c2612BF6e5972Ee483701);
-
-    /// @notice Address of the wxDAI token used as debt in Aave by this contract.
-    IERC20 public constant wxdai = IERC20(0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d);
-
     /// @notice Binary settings for the smart contract, as specified by the FLAGS_* constants.
     uint8 public flags;
 
@@ -89,11 +83,11 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         __ERC20_init("Ariadne sDAI duplicator", "AsDAI");
         __Ownable_init(msg.sender);
 
-        wxdai.approve(address(pool()), 2 ** 256 - 1);
-        sdai.approve(address(pool()), 2 ** 256 - 1);
+        wxdai().approve(address(pool()), 2 ** 256 - 1);
+        sdai().approve(address(pool()), 2 ** 256 - 1);
 
-        wxdai.approve(address(SAVINGS_X_DAI_ADAPTER), 2 ** 256 - 1);
-        sdai.approve(address(SAVINGS_X_DAI_ADAPTER), 2 ** 256 - 1);
+        wxdai().approve(address(SAVINGS_X_DAI_ADAPTER), 2 ** 256 - 1);
+        sdai().approve(address(SAVINGS_X_DAI_ADAPTER), 2 ** 256 - 1);
     }
 
     function _authorizeUpgrade(address)
@@ -127,13 +121,13 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
             revert AsdaiIncorrectDepositOrWithdrawalAmount();
         }
 
-        uint256 wxdaiPrice = oracle().getAssetPrice(address(wxdai));
+        uint256 wxdaiPrice = getWxdaiPrice();
         _rebalance(wxdaiPrice, false);
 
-        wxdai.transferFrom(msg.sender, address(this), amount);
+        wxdai().transferFrom(msg.sender, address(this), amount);
 
         // any dust left after rebalance() goes to the next investor
-        uint256 wxdaiAmount = wxdai.balanceOf(address(this));
+        uint256 wxdaiAmount = wxdai().balanceOf(address(this));
 
         uint256 idealLtv = ltv() * 10 - 1; // just a tiny bit leeway
 
@@ -143,7 +137,7 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         uint256 totalBalanceBaseBefore = totalBalanceBase();
 
         bytes memory userData = abi.encode(FLASH_LOAN_MODE_DEPOSIT, wxdaiPrice);
-        _doFlashLoan(address(wxdai), amountToFlashLoan, userData);
+        _doFlashLoan(address(wxdai()), amountToFlashLoan, userData);
 
         uint256 totalBalanceBaseAfter = totalBalanceBase();
 
@@ -192,8 +186,7 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
     function rebalance()
         public
     {
-        uint256 wxdaiPrice = oracle().getAssetPrice(address(wxdai));
-        _rebalance(wxdaiPrice, true);
+        _rebalance(getWxdaiPrice(), true);
     }
 
     function _rebalance(uint256 wxdaiPrice, bool shouldRevertOnFirst)
@@ -224,9 +217,9 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
 
             availableBorrowsWxdai = convertBaseToWxdai(availableBorrowsBase, wxdaiPrice);
 
-            _pool.borrow(address(wxdai), availableBorrowsWxdai - 1, AAVE_INTEREST_RATE_MODE_VARIABLE, 0, address(this));
-            SAVINGS_X_DAI_ADAPTER.deposit(wxdai.balanceOf(address(this)), address(this));
-            _pool.supply(address(sdai), sdai.balanceOf(address(this)), address(this), 0);
+            _pool.borrow(address(wxdai()), availableBorrowsWxdai - 1, AAVE_INTEREST_RATE_MODE_VARIABLE, 0, address(this));
+            SAVINGS_X_DAI_ADAPTER.deposit(wxdai().balanceOf(address(this)), address(this));
+            _pool.supply(address(sdai()), sdai().balanceOf(address(this)), address(this), 0);
         }
     }
 
@@ -236,16 +229,16 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         uint256 percent = Math.mulDiv(amount, 10e18, totalSupply());
         assert(percent > 0);
 
-        uint256 wxdaiReturnAmount = Math.mulDiv(wxdai.balanceOf(address(this)), percent, 10e18);
+        uint256 wxdaiReturnAmount = Math.mulDiv(wxdai().balanceOf(address(this)), percent, 10e18);
 
         _burn(msg.sender, amount);
-        wxdai.transfer(msg.sender, wxdaiReturnAmount);
+        wxdai().transfer(msg.sender, wxdaiReturnAmount);
     }
 
     function _withdrawOpen(uint256 amount)
         internal
     {
-        uint256 wxdaiPrice = oracle().getAssetPrice(address(wxdai));
+        uint256 wxdaiPrice = getWxdaiPrice();
         _rebalance(wxdaiPrice, false);
 
         uint256 percent = Math.mulDiv(amount, 10e18, totalSupply());
@@ -257,15 +250,15 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         uint256 repayDebtBase = Math.mulDiv(totalDebtBase, percent, 10e18);
         uint256 repayDebtWxdai = convertBaseToWxdai(repayDebtBase, wxdaiPrice);
 
-        uint256 wxdaiDust = wxdai.balanceOf(address(this));
+        uint256 wxdaiDust = wxdai().balanceOf(address(this));
         assert(wxdaiDust < repayDebtWxdai);
         repayDebtWxdai -= wxdaiDust;
 
         bytes memory userData = abi.encode(FLASH_LOAN_MODE_WITHDRAW);
-        _doFlashLoan(address(wxdai), repayDebtWxdai, userData);
+        _doFlashLoan(address(wxdai()), repayDebtWxdai, userData);
 
-        uint256 wxdaiBalance = wxdai.balanceOf(address(this));
-        wxdai.transfer(msg.sender, wxdaiBalance);
+        uint256 wxdaiBalance = wxdai().balanceOf(address(this));
+        wxdai().transfer(msg.sender, wxdaiBalance);
 
         emit PositionWithdraw(amount, wxdaiBalance, msg.sender);
     }
@@ -291,7 +284,7 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         external
         onlyBalancerVault
     {
-        if (tokens.length != 1 || tokens[0] != address(wxdai)) {
+        if (tokens.length != 1 || tokens[0] != address(wxdai())) {
             revert AsdaiIncorrectFlashloanTokenReceived();
         }
 
@@ -301,15 +294,15 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
             (, uint256 wxdaiPrice) = abi.decode(userData, (uint8, uint256));
 
             // there is no dust: at this point all wxdai amount belongs to the investor.
-            uint256 wxdaiBalance = wxdai.balanceOf(address(this));
+            uint256 wxdaiBalance = wxdai().balanceOf(address(this));
 
             SAVINGS_X_DAI_ADAPTER.deposit(wxdaiBalance, address(this));
 
             // zero wxdai left on contract at this point
 
             // all sdai dust goes to common pool
-            pool().supply(address(sdai), sdai.balanceOf(address(this)), address(this), 0);
-            pool().setUserUseReserveAsCollateral(address(sdai), true);
+            pool().supply(address(sdai()), sdai().balanceOf(address(this)), address(this), 0);
+            pool().setUserUseReserveAsCollateral(address(sdai()), true);
 
             // zero sdai left on contract at this point
 
@@ -321,36 +314,36 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
                 revert AsdaiNotEnoughToBorrow();
             }
 
-            pool().borrow(address(wxdai), amounts[0], AAVE_INTEREST_RATE_MODE_VARIABLE, 0, address(this));
-            wxdai.transfer(address(BALANCER_VAULT), amounts[0]);
+            pool().borrow(address(wxdai()), amounts[0], AAVE_INTEREST_RATE_MODE_VARIABLE, 0, address(this));
+            wxdai().transfer(address(BALANCER_VAULT), amounts[0]);
 
             // zero dust at this point because we have borrowed and returned exactly the flashloan amount
 
         } else if (mode == FLASH_LOAN_MODE_WITHDRAW) {
             // whatever dust was left before flashloan PLUS flashloan amounts equals the calculated debt to repay
-            pool().repay(address(wxdai), wxdai.balanceOf(address(this)), AAVE_INTEREST_RATE_MODE_VARIABLE, address(this));
+            pool().repay(address(wxdai()), wxdai().balanceOf(address(this)), AAVE_INTEREST_RATE_MODE_VARIABLE, address(this));
 
             (, , uint256 availableBorrowsBase, , ,) = pool().getUserAccountData(address(this));
 
             uint256 toWithdrawBase = availableBorrowsBase * 10000 / ltv() - 1;
-            uint256 toWithdraw = convertBaseToSdai(toWithdrawBase, oracle().getAssetPrice(address(sdai)));
+            uint256 toWithdraw = convertBaseToSdai(toWithdrawBase, oracle().getAssetPrice(address(sdai())));
 
-            pool().withdraw(address(sdai), toWithdraw, address(this));
+            pool().withdraw(address(sdai()), toWithdraw, address(this));
 
-            SAVINGS_X_DAI_ADAPTER.redeem(sdai.balanceOf(address(this)), address(this));
+            SAVINGS_X_DAI_ADAPTER.redeem(sdai().balanceOf(address(this)), address(this));
 
             // no sdai dust left here
 
-            wxdai.transfer(address(BALANCER_VAULT), amounts[0]);
+            wxdai().transfer(address(BALANCER_VAULT), amounts[0]);
 
         } else if (mode == FLASH_LOAN_MODE_CLOSE) {
-            pool().repay(address(wxdai), 2 ** 256 - 1, AAVE_INTEREST_RATE_MODE_VARIABLE, address(this));
-            pool().withdraw(address(sdai), 2 ** 256 - 1, address(this));
-            SAVINGS_X_DAI_ADAPTER.redeem(sdai.balanceOf(address(this)), address(this));
+            pool().repay(address(wxdai()), 2 ** 256 - 1, AAVE_INTEREST_RATE_MODE_VARIABLE, address(this));
+            pool().withdraw(address(sdai()), 2 ** 256 - 1, address(this));
+            SAVINGS_X_DAI_ADAPTER.redeem(sdai().balanceOf(address(this)), address(this));
 
             // no sdai dust left here
 
-            wxdai.transfer(address(BALANCER_VAULT), amounts[0]);
+            wxdai().transfer(address(BALANCER_VAULT), amounts[0]);
 
         } else {
             revert AsdaiUnknownFlashloanMode();
@@ -397,16 +390,16 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
     {
         flags = flags | FLAGS_POSITION_CLOSED;
 
-        uint256 wxdaiPrice = oracle().getAssetPrice(address(wxdai));
+        uint256 wxdaiPrice = getWxdaiPrice();
         _rebalance(wxdaiPrice, false);
 
         (, uint256 totalDebtBase, , , ,) = pool().getUserAccountData(address(this));
         uint256 repayDebtWxdai = convertBaseToWxdai(totalDebtBase, wxdaiPrice) / 100 * 103;
 
         bytes memory userData = abi.encode(FLASH_LOAN_MODE_CLOSE);
-        _doFlashLoan(address(wxdai), repayDebtWxdai, userData);
+        _doFlashLoan(address(wxdai()), repayDebtWxdai, userData);
 
-        emit PositionClose(wxdai.balanceOf(address(this)));
+        emit PositionClose(wxdai().balanceOf(address(this)));
     }
 
     function pool()
@@ -425,12 +418,37 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         return IAaveOracle(AAVE_ADDRESS_PROVIDER.getPriceOracle());
     }
 
+    function wxdai()
+        internal
+        view
+        returns (IERC20)
+    {
+        return IERC20(SAVINGS_X_DAI_ADAPTER.wxdai());
+    }
+
+    function sdai()
+        internal
+        view
+        returns (IERC20)
+    {
+        return IERC20(SAVINGS_X_DAI_ADAPTER.sDAI());
+    }
+
+    function getWxdaiPrice()
+        internal
+        view
+        returns (uint256)
+
+    {
+        return oracle().getAssetPrice(address(wxdai()));
+    }
+
     function ltv()
         internal
         view
         returns (uint256)
     {
-        DataTypes.ReserveConfigurationMap memory poolConfiguration = pool().getConfiguration(address(sdai));
+        DataTypes.ReserveConfigurationMap memory poolConfiguration = pool().getConfiguration(address(sdai()));
         return poolConfiguration.data & EXTRACT_LTV_FROM_POOL_CONFIGURATION_DATA_MASK;
     }
 

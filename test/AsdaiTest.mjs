@@ -29,6 +29,8 @@ describe("Asdai", function() {
   before(async () => {
     [ myAccount, secondAccount, ownerAccount ] = await hre.ethers.getSigners();
 
+    const savingsXDaiAdapter = await ethers.getContractAt('ISavingsXDaiAdapter', '0xD499b51fcFc66bd31248ef4b28d656d67E591A94');
+
     const Asdai = await ethers.getContractFactory('Asdai');
     // to test proxies:
     // asdai = await upgrades.deployProxy(SDD, [], { initializer: false, kind: 'uups' });
@@ -56,10 +58,10 @@ describe("Asdai", function() {
       0 // flags
     );
 
-    sdai = await ethers.getContractAt('IERC20Metadata', await asdai.sdai());
+    sdai = await ethers.getContractAt('IERC20Metadata', await savingsXDaiAdapter.sDAI());
     sdai.address = await sdai.getAddress();
 
-    wxdai = await ethers.getContractAt('IERC20Metadata', await asdai.wxdai());
+    wxdai = await ethers.getContractAt('IERC20Metadata', await savingsXDaiAdapter.wxdai());
     wxdai.address = await wxdai.getAddress();
 
     wxdaiPrice = await aaveOracle.getAssetPrice(wxdai.address);
