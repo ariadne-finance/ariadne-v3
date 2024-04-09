@@ -1,0 +1,7 @@
+{
+  "files.exclude": {
+    "contracts/node_modules": true,
+    "frontend/node_modules": true,
+    "frontend-dist/**": true
+  }
+}
