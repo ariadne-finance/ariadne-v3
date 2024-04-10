@@ -450,14 +450,17 @@ describe("Asdai", function() {
     await asdai.connect(ownerAccount).closePosition();
 
     const myBalance = await asdai.balanceOf(myAccount.address);
-    await asdai.withdraw(myBalance);
+
+    const correctBalance = (a) => HUNDRED / 100n * 99n < a && a < HUNDRED / 100n * 101n;
+
+    await expect(asdai.withdraw(myBalance)).to.emit(asdai, 'PositionWithdraw')
+      .withArgs(myBalance, correctBalance, myAccount.address);
 
     expect(await wxdai.balanceOf(asdai.address)).to.be.lt(10);
     expect(await wxdai.balanceOf(myAccount.address)).to.be.withinPercent(HUNDRED, 1);
 
     expect(await asdai.totalSupply()).to.be.eq(0);
     expect(await asdai.totalBalanceBase()).to.be.withinPercent(0, 1);
-    // FIXME check for event
   });
 
   it("multiple users", async () => {
