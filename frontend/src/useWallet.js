@@ -20,8 +20,10 @@ const chains = [
     id: 0x64,
     token: 'XDAI',
     label: 'Gnosis',
-    rpcUrl: 'https://gnosis.drpc.org',
-    publicRpcUrl: 'https://gnosis.drpc.org',
+    // rpcUrl: 'https://gnosis.drpc.org',
+    // publicRpcUrl: 'https://gnosis.drpc.org',
+    rpcUrl: 'https://gnosis-rpc.publicnode.com',
+    publicRpcUrl: 'https://gnosis-rpc.publicnode.com',
     // FIXME
     icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 68" width="88px" height="68px"><path d="M63.5,34l12-5.8l4.1-12.4l-8.2-5.9H16.5L3.8,19.1h64.5l-3.4,10.5H39.1l-2.5,7.6h25.9l-7.2,22l12.1-5.9L71.6,40 l-8.1-5.9L63.5,34z" fill="#FCFC03" /><path d="M22.1,49.6l7.5-22.9l-8.3-6.1L8.8,59.1h46.3l3.1-9.5H22.1z" fill="#FCFC03" /></svg>',
     // FIXME

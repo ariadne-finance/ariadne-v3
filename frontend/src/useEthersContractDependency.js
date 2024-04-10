@@ -37,6 +37,8 @@ export function useEthersContract(dependenciesList, address, abi, provider) {
       }
 
       contract.value.provider = toValue(provider);
+      contract.value.address = toValue(address);
+
       console.debug("Created contract", toValue(address), "on network", toValue(provider).chainId);
 
       isReady.value = true;

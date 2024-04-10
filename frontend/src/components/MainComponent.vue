@@ -27,13 +27,16 @@
 
 <script setup>
 import { useOnboard } from '@web3-onboard/vue';
+import { useWallet } from '@/useWallet';
 import DepositWidget from '@/components/DepositWidget.vue';
 import CenteredLayout from '@/components/CenteredLayout.vue';
 import TheTitle from './TheTitle.vue';
 import ButtonError from './ButtonError.vue';
 import PageDecorations from './PageDecorations.vue';
+import { computed } from 'vue';
 
 const { connectedWallet, setChain } = useOnboard();
+const { chainId } = useWallet();
 
-const isSupportedChain = true; // FIXME
+const isSupportedChain = computed(() => chainId.value == 0x64);
 </script>

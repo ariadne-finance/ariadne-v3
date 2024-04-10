@@ -8,22 +8,28 @@
           <the-logo />
         </div>
 
+        Asdai balance: {{ asdaiBalance }}
+        <br>
+        Wxdai balance: {{ asdaiBalanceAsWxdaiHr }}
+        <br>
+
         <form class="w-full max-w-[400px] mt-8" @submit.prevent="deposit">
           <currency-input-withdraw
             ref="depositInput"
             v-model="depositAmount"
             v-model:selectedWithdrawToken="selectedDepositToken"
-            :decimals="selectedDepositTokenDecimals"
+            :decimals="18"
             :display-decimals="4"
-            :max="selectedDepositTokenBalanceOrEth"
+            :max="selectedDepositTokenBalanceOrNative"
+            :min="settings.minDepositAmount"
             :disabled="isMetamaskBusy"
             :tokens="depositTokenSymbolList"
             placeholder=""
             class="grow mt-4"
-          />
+          /> <!-- FIXME show min -->
 
           <a class="font-semibold link-dashed text-slate-400" @click="depositMaxClicked">
-            max {{ selectedDepositTokenBalanceOrEthHr }} {{ selectedDepositToken }}
+            max {{ selectedDepositTokenBalanceOrNativeHr }} {{ selectedDepositToken }}
           </a>
 
           <button-submit class="w-full mt-8" :disabled="!isDepositButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Deposit</button-submit>
@@ -35,23 +41,16 @@
 
 <script setup>
 import TheLogo from './TheLogo.vue';
-import TheSpinner from './TheSpinner.vue';
 import CenteredLayout from '@/components/CenteredLayout.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
 import ButtonSubmit from '@/components/ButtonSubmit.vue';
 import { shallowRef, computed, toValue, watch, ref } from 'vue';
-import { formatContractUnits, formatUnits } from '@/formatters';
-import { useCollector } from '@/useCollector';
+import { formatUnits } from '@/formatters';
 import { useERC20Balance } from '@/useERC20Balance';
 import { snapTo100Percent } from '@/snapTo100Percent';
 import CurrencyInputWithdraw from '@/components/CurrencyInputWithdraw.vue';
 import { useWallet } from '@/useWallet';
-import { ethers } from 'ethers';
-
-const DEPOSIT_LABEL_DEPOSITING = 'Depositing...';
-const DEPOSIT_LABEL_WRAPPING = 'Wrapping...';
-const DEPOSIT_LABEL_CONFIRMING = 'Confirming...';
-const DEPOSIT_LABEL_SUCCESS = 'Success!';
+import { useAsdai } from '@/useAsdai';
 
 const isMetamaskBusy = shallowRef(false);
 
@@ -60,56 +59,39 @@ const { address, provider, signer } = useWallet();
 const depositInput = ref(null);
 const depositAmount = shallowRef(null);
 
-const selectedDepositToken = shallowRef(null);
+const selectedDepositToken = shallowRef('WXDAI');
 
 const {
-  isReady: isCollectorReady,
-  refetch: refetchCollector,
-  tokenContracts,
-  isLookupDone,
-  contract: collectorContract
-} = useCollector();
+  isReady: isAsdaiReady,
+  refetch: refetchAsdai,
+  asdaiContract,
+  wxdaiContract,
+  wxdaiPrice,
+  settings
+} = useAsdai();
 
-const wethContract = computed(() => {
-  if (!isLookupDone.value) {
-    return null;
+const nativeBalance = shallowRef(null);
+
+async function loadNativeBalance() {
+  nativeBalance.value = await provider.value.getBalance(address.value);
+}
+
+loadNativeBalance();
+
+const isDepositTokenNativeCurrency = computed(() => (toValue(selectedDepositToken) || '').toLowerCase() === 'xdai');
+
+const selectedDepositTokenBalanceOrNative = computed(() => {
+  if (toValue(isDepositTokenNativeCurrency)) {
+    return nativeBalance.value;
   }
 
-  return tokenContracts.value.find(c => toValue(c).erc20.symbol === 'WETH');
+  return wxdaiBalance.value;
 });
 
-const selectedDepositTokenContract = computed(() => {
-  const tokenToSearch = toValue(selectedDepositToken) === 'ETH' ? 'WETH' : toValue(selectedDepositToken);
-  return tokenContracts.value.find(c => c.erc20?.symbol === tokenToSearch);
-});
-
-const selectedDepositTokenDecimals = computed(() => {
-  if (selectedDepositTokenContract.value?.erc20) {
-    return selectedDepositTokenContract.value.erc20.decimals;
-  }
-
-  if (selectedDepositToken.value === 'ETH') {
-    return 18;
-  }
-
-  return null;
-});
-
-const {
-  balance: selectedDepositTokenBalance,
-  isReady: isSelectedDepositTokenBalanceReady,
-  refetch: refetchSelectedDepositTokenBalance
-} = useERC20Balance(selectedDepositTokenContract, address);
-
-const isSelectedDepositTokenOrEthBalanceReady = computed(() => isSelectedDepositTokenBalanceReady.value || toValue(selectedDepositToken) === 'ETH');
-
-watch(isLookupDone, isDone => {
-  if (!isDone) {
-    selectedDepositToken.value = null;
-    return;
-  }
-
-  selectedDepositToken.value = toValue(tokenContracts.value[0]).erc20.symbol;
+const selectedDepositTokenBalanceOrNativeHr = computed(() => {
+  return selectedDepositTokenBalanceOrNative.value === null
+    ? '...'
+    : formatUnits(selectedDepositTokenBalanceOrNative.value, 18, 4, 4);
 });
 
 watch(selectedDepositToken, async (newSelectedDepositToken, oldSelectedDepositToken) => {
@@ -122,73 +104,63 @@ watch(selectedDepositToken, async (newSelectedDepositToken, oldSelectedDepositTo
   depositAmount.value = null;
 });
 
-const ethBalance = shallowRef(null);
-
-async function loadEthBalance() {
-  ethBalance.value = await provider.value.getBalance(address.value);
-}
-
-loadEthBalance();
-
-const isDepositTokenETH = computed(() => (toValue(selectedDepositToken) || '').toLowerCase() === 'eth');
-
-const selectedDepositTokenBalanceOrEth = computed(() => {
-  if (toValue(isDepositTokenETH)) {
-    return ethBalance.value;
-  }
-
-  return selectedDepositTokenBalance.value;
-});
-
-const selectedDepositTokenBalanceOrEthHr = computed(() => {
-  if (toValue(isDepositTokenETH)) {
-    return formatContractUnits(ethBalance.value, wethContract.value, 4, 4);
-  }
-
-  return formatContractUnits(selectedDepositTokenBalance.value, selectedDepositTokenContract.value, 4, 4);
-});
-
 const isReady = computed(
-  () => toValue(isCollectorReady)
-  && toValue(isLookupDone)
-  && toValue(isSelectedDepositTokenOrEthBalanceReady)
+  () => toValue(isAsdaiReady) && toValue(isWxdaiBalanceReady) && toValue(nativeBalance) !== null && toValue(isAsdaiBalanceReady)
 );
 
-const depositTokenSymbolList = computed(() => {
-  if (!isLookupDone.value) {
-    return [];
-  }
-
-  const list = tokenContracts.value.map(c => c.erc20?.symbol);
-  list.unshift('ETH');
-  return list;
-});
+const depositTokenSymbolList = [ 'XDAI', 'WXDAI' ];
 
 const isDepositButtonEnabled = computed(() => {
-  if (toValue(depositAmount) <= 0n) {
+  if (toValue(depositAmount) < toValue(settings).minDepositAmount) {
     return false;
   }
 
-  if (toValue(isDepositTokenETH)) {
-    return toValue(ethBalance) >= toValue(depositAmount);
+  if (toValue(isDepositTokenNativeCurrency)) {
+    return  toValue(depositAmount) <= toValue(nativeBalance);
   }
 
-  return toValue(depositAmount) <= toValue(selectedDepositTokenBalance);
+  return toValue(depositAmount) <= toValue(wxdaiBalance);
 });
 
 function depositMaxClicked() {
-  if (isDepositTokenETH.value) {
-    depositAmount.value = ethBalance.value;
-
-  } else if (!selectedDepositTokenBalance.value) {
-    return;
-
-  } else {
-    depositAmount.value = toValue(selectedDepositTokenBalanceOrEth);
+  let amount = toValue(selectedDepositTokenBalanceOrNative);
+  if (amount > toValue(settings).maxDepositAmount) {
+    amount = toValue(settings).maxDepositAmount;
   }
 
+  depositAmount.value = amount;
   toValue(depositInput).setValue(toValue(depositAmount));
 }
+
+const {
+  balance: wxdaiBalance,
+  isReady: isWxdaiBalanceReady,
+  refetch: refetchWxdaiBalance
+} = useERC20Balance(wxdaiContract, address);
+
+const {
+  balance: asdaiBalance,
+  isReady: isAsdaiBalanceReady,
+  refetch: refetchAsdaiBalance
+} = useERC20Balance(asdaiContract, address);
+
+const asdaiBalanceAsWxdai = computed(() => {
+  if (isAsdaiReady.value === false || isAsdaiBalanceReady.value === false) {
+    return null;
+  }
+
+  const percent = toValue(asdaiBalance) * 10n ** 18n / toValue(settings).totalSupply;
+  const asdaiBalanceBase = toValue(settings).totalBalanceBase * percent / 10n ** 8n;
+  return asdaiBalanceBase * toValue(wxdaiPrice) / 10n ** 8n;
+});
+
+const asdaiBalanceAsWxdaiHr = computed(() => {
+  if (asdaiBalanceAsWxdai.value === null) {
+    return '...';
+  }
+
+  return  formatUnits(asdaiBalanceAsWxdai.value, 18, 4, 4);
+});
 
 const isRefetching = shallowRef(false);
 
@@ -198,10 +170,10 @@ async function refetch() {
   isRefetching.value = true;
 
   await Promise.all([
-    refetchCollector(),
-    refetchSelectedDepositTokenBalance(),
-    loadEthBalance()
-    // note: we do not reload server-side balance, because that's called by deposit() function
+    refetchAsdai(),
+    loadNativeBalance(),
+    refetchWxdaiBalance(),
+    refetchAsdaiBalance()
   ]);
 
   if (Date.now() - startedAt <= 2000) {
@@ -213,19 +185,15 @@ async function refetch() {
 }
 
 async function deposit() {
-  const amountSnapped = toValue(isDepositTokenETH)
+  const amountSnapped = toValue(isDepositTokenNativeCurrency)
     ? toValue(depositAmount)
-    : snapTo100Percent(toValue(depositAmount), toValue(selectedDepositTokenBalanceOrEth));
+    : snapTo100Percent(toValue(depositAmount), toValue(selectedDepositTokenBalanceOrNative));
 
   isMetamaskBusy.value = true;
 
-  if (toValue(isDepositTokenETH)) {
-    const wethContractWithDeposit = new ethers.Contract(await toValue(wethContract).getAddress(), [ 'function deposit() external payable' ], toValue(provider));
-
+  if (toValue(isDepositTokenNativeCurrency)) {
     try {
-      const tr = await toValue(wethContractWithDeposit)
-        .connect(toValue(signer))
-        .deposit({ value: toValue(amountSnapped) });
+      const tr = await toValue(wxdaiContract).connect(toValue(signer)).deposit({ value: toValue(amountSnapped) });
       await tr.wait(2);
 
     } catch (error) {
@@ -237,7 +205,7 @@ async function deposit() {
       }
 
       console.error(error);
-      await alert('Error wrapping, see console for actual error');
+      alert('Error wrapping, see console for actual error');
 
       return;
     }
@@ -245,15 +213,39 @@ async function deposit() {
 
   let tr;
 
+  const allowance = await toValue(wxdaiContract).allowance(address.value, toValue(asdaiContract).address);
+
+  if (allowance < amountSnapped) {
+    try {
+      tr = await toValue(wxdaiContract).connect(toValue(signer)).approve(toValue(asdaiContract).address, amountSnapped);
+
+    } catch (error) {
+      isMetamaskBusy.value = false;
+
+      if (error.message.includes('DND-10')) { // FIXME errors
+      }
+
+      if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
+        // user rejected
+        return;
+      }
+
+      console.error(error);
+      alert('Error depositing, see console for actual error');
+
+      return;
+    }
+  } else {
+    console.log("Allowance ok");
+  }
+
   try {
-    tr = await toValue(selectedDepositTokenContract).connect(toValue(signer)).transfer(await toValue(collectorContract).getAddress(), amountSnapped);
+    tr = await toValue(asdaiContract).connect(toValue(signer)).deposit(amountSnapped);
 
   } catch (error) {
     isMetamaskBusy.value = false;
 
     if (error.message.includes('DND-10')) { // FIXME errors
-      await alert("This token cannot be deposited");
-      return;
     }
 
     if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
@@ -262,7 +254,7 @@ async function deposit() {
     }
 
     console.error(error);
-    await alert('Error depositing, see console for actual error');
+    alert('Error depositing, see console for actual error');
 
     return;
   }
@@ -272,16 +264,16 @@ async function deposit() {
 
   } catch (error) {
     console.error(error);
-    await alert('Error confirming deposit, see console for actual error');
+    alert('Error confirming deposit, see console for actual error');
   }
+
+  // FIXME congratulate the user
 
   isMetamaskBusy.value = false;
   depositInput.value.reset();
   depositAmount.value = null;
 
   refetch(); // fire-and-forget
-
-  reloadTotalUserBalance(tr.hash); // fire-and-forget
 }
 </script>
 
