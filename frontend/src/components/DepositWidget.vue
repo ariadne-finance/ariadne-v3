@@ -8,11 +8,6 @@
           <the-logo />
         </div>
 
-        Asdai balance: {{ asdaiBalance }}
-        <br>
-        Wxdai balance: {{ asdaiBalanceAsWxdaiHr }}
-        <br>
-
         <form class="w-full max-w-[400px] mt-8" @submit.prevent="deposit">
           <currency-input-withdraw
             ref="depositInput"
@@ -33,6 +28,32 @@
           </a>
 
           <button-submit class="w-full mt-8" :disabled="!isDepositButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Deposit</button-submit>
+        </form>
+
+        <hr/>
+
+        My balance: {{ asdaiBalanceAsWxdaiHr }} WXDAI
+        <br>
+
+        <form class="w-full max-w-[400px] mt-8" @submit.prevent="withdraw">
+          <currency-input-withdraw
+            ref="withdrawInput"
+            v-model="withdrawAmount"
+            v-model:selectedWithdrawToken="selectedWithdrawToken"
+            :decimals="18"
+            :display-decimals="4"
+            :max="asdaiBalanceAsWxdai"
+            :disabled="isMetamaskBusy"
+            :tokens="['WXDAI']"
+            placeholder=""
+            class="grow mt-4"
+          />
+
+          <a class="font-semibold link-dashed text-slate-400" @click="withdrawMaxClicked">
+            max {{ asdaiBalanceAsWxdaiHr }} WXDAI
+          </a>
+
+          <button-submit class="w-full mt-8" :disabled="!isWithdrawButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Withdraw</button-submit>
         </form>
       </div>
     </div>
@@ -59,7 +80,11 @@ const { address, provider, signer } = useWallet();
 const depositInput = ref(null);
 const depositAmount = shallowRef(null);
 
+const withdrawInput = ref(null);
+const withdrawAmount = shallowRef(null);
+
 const selectedDepositToken = shallowRef('WXDAI');
+const selectedWithdrawToken = shallowRef('WXDAI');
 
 const {
   isReady: isAsdaiReady,
@@ -122,6 +147,8 @@ const isDepositButtonEnabled = computed(() => {
   return toValue(depositAmount) <= toValue(wxdaiBalance);
 });
 
+const isWithdrawButtonEnabled = computed(() => toValue(withdrawAmount) > 0n && toValue(withdrawAmount) <= toValue(asdaiBalanceAsWxdai));
+
 function depositMaxClicked() {
   let amount = toValue(selectedDepositTokenBalanceOrNative);
   if (amount > toValue(settings).maxDepositAmount) {
@@ -130,6 +157,11 @@ function depositMaxClicked() {
 
   depositAmount.value = amount;
   toValue(depositInput).setValue(toValue(depositAmount));
+}
+
+function withdrawMaxClicked() {
+  withdrawAmount.value = toValue(asdaiBalanceAsWxdai);
+  toValue(withdrawInput).setValue(toValue(withdrawAmount));
 }
 
 const {
@@ -182,6 +214,50 @@ async function refetch() {
   } else {
     isRefetching.value = false;
   }
+}
+
+async function withdraw() {
+  const amountSnapped = snapTo100Percent(toValue(withdrawAmount), toValue(asdaiBalanceAsWxdai));
+
+  isMetamaskBusy.value = true;
+
+  let tr;
+
+  try {
+    tr = await toValue(asdaiContract).connect(toValue(signer)).withdraw(amountSnapped);
+
+  } catch (error) {
+    isMetamaskBusy.value = false;
+
+    if (error.message.includes('DND-10')) { // FIXME errors
+    }
+
+    if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
+      // user rejected
+      return;
+    }
+
+    console.error(error);
+    alert('Error depositing, see console for actual error');
+
+    return;
+  }
+
+  try {
+    await tr.wait(4);
+
+  } catch (error) {
+    console.error(error);
+    alert('Error confirming withdrawal, see console for actual error');
+  }
+
+  // FIXME congratulate the user
+
+  isMetamaskBusy.value = false;
+  withdrawInput.value.reset();
+  withdrawAmount.value = null;
+
+  refetch(); // fire-and-forget
 }
 
 async function deposit() {
