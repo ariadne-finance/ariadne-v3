@@ -243,21 +243,30 @@ async function withdraw() {
     return;
   }
 
+  let transactionResponse;
+
   try {
-    await tr.wait(4);
+    transactionResponse = await tr.wait(4);
 
   } catch (error) {
     console.error(error);
     alert('Error confirming withdrawal, see console for actual error');
   }
 
-  // FIXME congratulate the user
-
   isMetamaskBusy.value = false;
   withdrawInput.value.reset();
   withdrawAmount.value = null;
 
   refetch(); // fire-and-forget
+
+  const event = transactionResponse.logs.find(a => a.eventName === 'PositionWithdraw');
+
+  if (!event) {
+    alert("Event not found");
+    return;
+  }
+
+  alert("Withdrawn " + formatUnits(withdrawalEvent.args?.amountWxdai, 18, 4, 4) + " WXDAI");
 }
 
 async function deposit() {
@@ -335,21 +344,31 @@ async function deposit() {
     return;
   }
 
+  let transactionResponse;
+
   try {
-    await tr.wait(4);
+    transactionResponse = await tr.wait(4);
 
   } catch (error) {
     console.error(error);
     alert('Error confirming deposit, see console for actual error');
   }
 
-  // FIXME congratulate the user
 
   isMetamaskBusy.value = false;
   depositInput.value.reset();
   depositAmount.value = null;
 
   refetch(); // fire-and-forget
+
+  const event = transactionResponse.logs.find(a => a.eventName === 'PositionDeposit');
+
+  if (!event) {
+    alert("Event not found");
+    return;
+  }
+
+  alert("Deposited " + formatUnits(withdrawalEvent.args?.amountWxdai, 18, 4, 4) + " WXDAI");
 }
 </script>
 
