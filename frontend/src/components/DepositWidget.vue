@@ -72,6 +72,7 @@ import { snapTo100Percent } from '@/snapTo100Percent';
 import CurrencyInputWithdraw from '@/components/CurrencyInputWithdraw.vue';
 import { useWallet } from '@/useWallet';
 import { useAsdai } from '@/useAsdai';
+import { decodeError, DEPOSIT_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR, WITHDRAW_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR } from '@/asdaiErrors';
 
 const isMetamaskBusy = shallowRef(false);
 
@@ -229,16 +230,21 @@ async function withdraw() {
   } catch (error) {
     isMetamaskBusy.value = false;
 
-    if (error.message.includes('DND-10')) { // FIXME errors
-    }
-
     if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
       // user rejected
       return;
     }
 
+    const decodedError = decodeError(toValue(asdaiContract), error);
+    if (!decodedError) {
+      alert("Error withdrawing.");
+      return;
+    }
+
     console.error(error);
-    alert('Error depositing, see console for actual error');
+
+    const message = WITHDRAW_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR[decodedError.name] || "(unknown error)";
+    alert(message);
 
     return;
   }
@@ -250,7 +256,7 @@ async function withdraw() {
 
   } catch (error) {
     console.error(error);
-    alert('Error confirming withdrawal, see console for actual error');
+    alert("Error confirming withdrawal.");
   }
 
   isMetamaskBusy.value = false;
@@ -290,8 +296,7 @@ async function deposit() {
       }
 
       console.error(error);
-      alert('Error wrapping, see console for actual error');
-
+      alert("Error wrapping XDAI into WXDAI!");
       return;
     }
   }
@@ -307,21 +312,15 @@ async function deposit() {
     } catch (error) {
       isMetamaskBusy.value = false;
 
-      if (error.message.includes('DND-10')) { // FIXME errors
-      }
-
       if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
         // user rejected
         return;
       }
 
       console.error(error);
-      alert('Error depositing, see console for actual error');
-
+      alert("Error approving");
       return;
     }
-  } else {
-    console.log("Allowance ok");
   }
 
   try {
@@ -330,16 +329,21 @@ async function deposit() {
   } catch (error) {
     isMetamaskBusy.value = false;
 
-    if (error.message.includes('DND-10')) { // FIXME errors
-    }
-
     if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
       // user rejected
       return;
     }
 
+    const decodedError = decodeError(toValue(asdaiContract), error);
+    if (!decodedError) {
+      alert("Error depositing.");
+      return;
+    }
+
     console.error(error);
-    alert('Error depositing, see console for actual error');
+
+    const message = DEPOSIT_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR[decodedError.name] || "(unknown error)";
+    alert(message);
 
     return;
   }
@@ -351,7 +355,7 @@ async function deposit() {
 
   } catch (error) {
     console.error(error);
-    alert('Error confirming deposit, see console for actual error');
+    alert("Error confirming deposit.");
   }
 
 
