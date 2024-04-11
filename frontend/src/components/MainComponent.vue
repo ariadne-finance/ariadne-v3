@@ -1,10 +1,10 @@
 <template>
   <centered-layout v-if="!connectedWallet">
-    <page-decorations>
+    <div class="pb-20 relative">
       <div class="max-w-max mx-auto text-left">
         <the-title />
       </div>
-    </page-decorations>
+    </div>
   </centered-layout>
 
   <deposit-widget v-if="isSupportedChain" />
@@ -32,11 +32,10 @@ import DepositWidget from '@/components/DepositWidget.vue';
 import CenteredLayout from '@/components/CenteredLayout.vue';
 import TheTitle from './TheTitle.vue';
 import ButtonError from './ButtonError.vue';
-import PageDecorations from './PageDecorations.vue';
 import { computed } from 'vue';
 
 const { connectedWallet, setChain } = useOnboard();
 const { chainId } = useWallet();
 
-const isSupportedChain = computed(() => chainId.value == 0x64);
+const isSupportedChain = computed(() => chainId.value == 0x64); // eslint-disable-line eqeqeq
 </script>
