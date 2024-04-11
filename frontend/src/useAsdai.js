@@ -3,18 +3,16 @@ import WXDAIABI from '@abi/WXDAI.json';
 import IPoolAddressesProviderABI from '@abi/IPoolAddressesProvider.json';
 import IAaveOracleABI from '@abi/IAaveOracle.json';
 import { useEthersContractCall, useEthersContract } from '@/useEthersContractDependency';
-import { lookup } from 'erc20lookup';
-import { watch, computed, toValue, shallowRef, toRaw } from 'vue';
+import { shallowRef, computed, toValue } from 'vue';
 import { useWallet } from '@/useWallet';
-import { ethers } from 'ethers';
 
 export function useAsdai() {
-  const { provider, chainId } = useWallet();
+  const { provider } = useWallet();
 
-  const asdaiContractAddress = '0xDE9D935D7ad652b2c6F4CF3e9F615a905530F25B'
+  const asdaiContractAddress = '0xDE9D935D7ad652b2c6F4CF3e9F615a905530F25B';
 
   const { contract: asdaiContract, isReady: isAsdaiContractReady } = useEthersContract(
-    [ provider, asdaiContractAddress ],
+    [ provider, shallowRef(asdaiContractAddress) ],
     asdaiContractAddress,
     AsdaiABI,
     provider
@@ -23,7 +21,7 @@ export function useAsdai() {
   const AAVE_IPOOL_ADDRESSES_PROVIDER_ADDRESS = '0x36616cf17557639614c1cdDb356b1B83fc0B2132';
 
   const { contract: aaveAddressProviderContract } = useEthersContract(
-    [ provider, AAVE_IPOOL_ADDRESSES_PROVIDER_ADDRESS ],
+    [ provider, shallowRef(AAVE_IPOOL_ADDRESSES_PROVIDER_ADDRESS) ],
     AAVE_IPOOL_ADDRESSES_PROVIDER_ADDRESS,
     IPoolAddressesProviderABI,
     provider
@@ -50,7 +48,7 @@ export function useAsdai() {
   );
 
   const { contract: wxdaiContract, isReady: isWxdaiContractReady } = useEthersContract(
-    [ provider, wxdaiContractAddress ],
+    [ provider, shallowRef(wxdaiContractAddress) ],
     wxdaiContractAddress,
     WXDAIABI,
     provider
@@ -82,11 +80,11 @@ export function useAsdai() {
     ]);
   }
 
-  const isReady = computed(() => isAsdaiContractReady.value
-    && isWxdaiContractReady.value
-    && isSettingsReady.value
-    && isWxdaiPriceReady.value
-  );
+  const isReady = computed(() => (toValue(isAsdaiContractReady)
+    && toValue(isWxdaiContractReady)
+    && toValue(isSettingsReady)
+    && toValue(isWxdaiPriceReady)
+  ));
 
   return {
     asdaiContract,

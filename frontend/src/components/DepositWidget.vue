@@ -88,11 +88,11 @@ const selectedDepositTokenBalanceOrNative = computed(() => {
   return wxdaiBalance.value;
 });
 
-const selectedDepositTokenBalanceOrNativeHr = computed(() => {
-  return selectedDepositTokenBalanceOrNative.value === null
+const selectedDepositTokenBalanceOrNativeHr = computed(() => (
+  selectedDepositTokenBalanceOrNative.value === null
     ? '...'
-    : formatUnits(selectedDepositTokenBalanceOrNative.value, 18, 4, 4);
-});
+    : formatUnits(selectedDepositTokenBalanceOrNative.value, 18, 4, 4)
+));
 
 watch(selectedDepositToken, async (newSelectedDepositToken, oldSelectedDepositToken) => {
   // do not reset anything if we're just setting it
@@ -116,7 +116,7 @@ const isDepositButtonEnabled = computed(() => {
   }
 
   if (toValue(isDepositTokenNativeCurrency)) {
-    return  toValue(depositAmount) <= toValue(nativeBalance);
+    return toValue(depositAmount) <= toValue(nativeBalance);
   }
 
   return toValue(depositAmount) <= toValue(wxdaiBalance);
@@ -159,7 +159,7 @@ const asdaiBalanceAsWxdaiHr = computed(() => {
     return '...';
   }
 
-  return  formatUnits(asdaiBalanceAsWxdai.value, 18, 4, 4);
+  return formatUnits(asdaiBalanceAsWxdai.value, 18, 4, 4);
 });
 
 const isRefetching = shallowRef(false);

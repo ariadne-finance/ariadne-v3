@@ -10,6 +10,7 @@
     "lint:fix": "eslint ./src --ext vue,js,mjs --fix"
   },
   "dependencies": {
+    "@aave/core-v3": "^1.19.3",
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
     "@fontsource-variable/inter": "^5.0.16",
     "@fontsource-variable/orbitron": "^5.0.18",
@@ -27,8 +28,10 @@
     "eslint-plugin-vue": "^9.21.1",
     "ethers": "^6.10.0",
     "graphql-request": "^6.1.0",
+    "install": "^0.13.0",
     "is-number": "^7.0.0",
     "node-stdlib-browser": "^1.2.0",
+    "npm": "^10.5.2",
     "postcss-preset-env": "^9.3.0",
     "rollup-plugin-polyfill-node": "^0.13.0",
     "sass": "^1.70.0",

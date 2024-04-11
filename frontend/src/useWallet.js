@@ -2,7 +2,6 @@ import { init as initOnboard, useOnboard } from '@web3-onboard/vue';
 import injectedModule from '@web3-onboard/injected-wallets';
 import { shallowRef, watchEffect } from 'vue';
 import { ethers } from 'ethers';
-import { isDark } from './useDark';
 
 const onboard = shallowRef(null);
 
@@ -42,21 +41,11 @@ const appMetadata = {
   ]
 };
 
-const customLightTheme = {
+const customTheme = {
   '--w3o-background-color': '#ffffff',
   '--w3o-foreground-color': '#EFF1FC',
   '--w3o-text-color': '#1a1d26',
   '--w3o-border-color': '#d0d4f7',
-  '--w3o-action-color': '#1970b3',
-  '--w3o-border-radius': '16px',
-  '--w3o-font-family': 'inherit'
-};
-
-const customDarkTheme = {
-  '--w3o-background-color': '#1A1D26',
-  '--w3o-foreground-color': '#242835',
-  '--w3o-text-color': '#EFF1FC',
-  '--w3o-border-color': '#33394B',
   '--w3o-action-color': '#1970b3',
   '--w3o-border-radius': '16px',
   '--w3o-font-family': 'inherit'
@@ -67,7 +56,7 @@ export function init() {
     wallets: [ injected ],
     chains,
     appMetadata,
-    theme: isDark.value ? customDarkTheme : customLightTheme,
+    theme: customTheme,
     connect: {
       autoConnectAllPreviousWallet: true
     },
@@ -105,11 +94,6 @@ function setWatchers() {
   isWatchesSet = true;
 }
 
-function setTheme(theme) {
-  const _theme = theme === 'dark' ? customDarkTheme : customLightTheme;
-  onboard.value.state.actions.updateTheme(_theme);
-}
-
 export function useWallet() {
   if (!isWatchesSet) {
     setWatchers();
@@ -119,7 +103,6 @@ export function useWallet() {
     address,
     provider,
     signer,
-    chainId,
-    setTheme
+    chainId
   };
 }
