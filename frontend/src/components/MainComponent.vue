@@ -5,24 +5,31 @@
         <the-title />
       </div>
     </div>
-  </centered-layout>
-
-  <deposit-widget v-if="isSupportedChain" />
-
-  <centered-layout v-else>
-    <div class="-mt-8 inline-flex flex-col justify-center items-stretch">
-      <div class="mb-8 text-center">
-        Unsupported chain
-      </div>
-
-      <button-error
-        class="mb-4"
-        @click="setChain({ chainId: 0x64 })"
-      >
-        Switch to Gnosis FIXME
+    <div>
+      <button-error class="mb-4" @click="connectWallet()">
+        Connect wallet
       </button-error>
     </div>
   </centered-layout>
+
+  <template v-else>
+    <deposit-widget v-if="isSupportedChain" />
+
+    <centered-layout v-else>
+      <div class="-mt-8 inline-flex flex-col justify-center items-stretch">
+        <div class="mb-8 text-center">
+          Unsupported chain
+        </div>
+
+        <button-error
+          class="mb-4"
+          @click="setChain({ chainId: GNOSIS_CHAIN_ID })"
+        >
+          Switch to Gnosis FIXME
+        </button-error>
+      </div>
+    </centered-layout>
+  </template>
 </template>
 
 <script setup>
@@ -34,8 +41,10 @@ import TheTitle from './TheTitle.vue';
 import ButtonError from './ButtonError.vue';
 import { computed } from 'vue';
 
-const { connectedWallet, setChain } = useOnboard();
+const GNOSIS_CHAIN_ID = 0x64;
+
+const { connectedWallet, setChain, connectWallet } = useOnboard();
 const { chainId } = useWallet();
 
-const isSupportedChain = computed(() => chainId.value == 0x64); // eslint-disable-line eqeqeq
+const isSupportedChain = computed(() => chainId.value == GNOSIS_CHAIN_ID); // eslint-disable-line eqeqeq
 </script>
