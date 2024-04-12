@@ -10,7 +10,10 @@ const target = [ 'es2021', 'chrome110', 'edge110', 'firefox110', 'safari15' ];
 // https://vitejs.dev/config/
 export default defineConfig({
   server: {
-    port: 3000
+    port: 3000,
+    proxy: {
+      '/api': 'http://localhost:3090'
+    }
   },
 
   plugins: [ vue() ],

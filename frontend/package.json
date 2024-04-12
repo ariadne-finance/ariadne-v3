@@ -26,7 +26,6 @@
     "eslint-import-resolver-alias": "^1.1.2",
     "eslint-plugin-vue": "^9.21.1",
     "ethers": "^6.10.0",
-    "graphql-request": "^6.1.0",
     "install": "^0.13.0",
     "is-number": "^7.0.0",
     "node-stdlib-browser": "^1.2.0",

@@ -1,0 +1,19 @@
+{
+  "private": true,
+  "name": "backend",
+  "version": "0.0.1",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon --ignore '*.json' index.mjs",
+    "lint": "eslint *mjs lib/*mjs"
+  },
+  "dependencies": {
+    "@fastify/cors": "^9.0.1",
+    "ethers": "^6.11.1",
+    "fastify": "^4.26.2",
+    "graphql-request": "^6.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}

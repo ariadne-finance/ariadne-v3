@@ -8,6 +8,18 @@
           <the-logo />
         </div>
 
+        APY: {{ apyHr }}
+
+        <template v-if="isApyReady">
+          <br>
+          agave vault apy: {{ formatUnits(apy.agaveVaultApy, 18, 2, 2) }}% <br>
+          collateral leverage: &times;{{ formatUnits(apy.collateralLeverage, 5, 2, 2) }} <br>
+          leveragedAgaveVaultApy: {{ formatUnits(apy.leveragedAgaveVaultApy, 18, 2, 2) }}% <br>
+          aave wxdai borrow rate: {{ formatUnits(apy.aaveVariableBorrowRate, 18, 2, 2) }}% <br>
+          debt leverage: &times;{{ formatUnits(apy.debtLeverage, 5, 2, 2) }} <br>
+          leveraged wxdai borrow rate: {{ formatUnits(apy.leveragedWxdaiBorrowRate, 18, 2, 2) }}% <br>
+        </template>
+
         <form class="w-full max-w-[400px] mt-8" @submit.prevent="deposit">
           <currency-input-withdraw
             ref="depositInput"
@@ -72,11 +84,22 @@ import { snapTo100Percent } from '@/snapTo100Percent';
 import CurrencyInputWithdraw from '@/components/CurrencyInputWithdraw.vue';
 import { useWallet } from '@/useWallet';
 import { useAsdai } from '@/useAsdai';
+import { apy, isApyReady, loadApy } from '@/apy';
 import { decodeError, DEPOSIT_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR, WITHDRAW_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR } from '@/asdaiErrors';
 
 const isMetamaskBusy = shallowRef(false);
 
 const { address, provider, signer } = useWallet();
+
+loadApy();
+
+const apyHr = computed(() => {
+  if (!toValue(isApyReady)) {
+    return '-';
+  }
+
+  return formatUnits(apy.value.apy, 18, 2, 2) + '%';
+});
 
 const depositInput = ref(null);
 const depositAmount = shallowRef(null);
@@ -131,7 +154,10 @@ watch(selectedDepositToken, async (newSelectedDepositToken, oldSelectedDepositTo
 });
 
 const isReady = computed(
-  () => toValue(isAsdaiReady) && toValue(isWxdaiBalanceReady) && toValue(nativeBalance) !== null && toValue(isAsdaiBalanceReady)
+  () => toValue(isAsdaiReady)
+    && toValue(isWxdaiBalanceReady)
+    && toValue(nativeBalance) !== null
+    && toValue(isAsdaiBalanceReady)
 );
 
 const depositTokenSymbolList = [ 'XDAI', 'WXDAI' ];
@@ -208,6 +234,8 @@ async function refetch() {
     refetchWxdaiBalance(),
     refetchAsdaiBalance()
   ]);
+
+  loadApy(); // out of sync
 
   if (Date.now() - startedAt <= 2000) {
     setTimeout(() => isRefetching.value = false, 1000);
