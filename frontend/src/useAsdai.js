@@ -9,11 +9,11 @@ import { useWallet } from '@/useWallet';
 export function useAsdai() {
   const { provider } = useWallet();
 
-  const asdaiContractAddress = '0xDE9D935D7ad652b2c6F4CF3e9F615a905530F25B';
+  const ASDAI_CONTRACT_ADDRESS = '0xDE9D935D7ad652b2c6F4CF3e9F615a905530F25B';
 
   const { contract: asdaiContract, isReady: isAsdaiContractReady } = useEthersContract(
-    [ provider, shallowRef(asdaiContractAddress) ],
-    asdaiContractAddress,
+    [ provider, shallowRef(ASDAI_CONTRACT_ADDRESS) ],
+    ASDAI_CONTRACT_ADDRESS,
     AsdaiABI,
     provider
   );
@@ -40,16 +40,16 @@ export function useAsdai() {
     provider
   );
 
-  const wxdaiContractAddress = '0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d';
+  const WXDAI_CONTRACT_ADDRESS = '0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d';
 
   const { data: wxdaiPrice, refetch: refetchWxdaiPrice, isReady: isWxdaiPriceReady } = useEthersContractCall(
     [ aavePriceOracleContract ],
-    async () => toValue(aavePriceOracleContract).getAssetPrice(wxdaiContractAddress)
+    async () => toValue(aavePriceOracleContract).getAssetPrice(WXDAI_CONTRACT_ADDRESS)
   );
 
   const { contract: wxdaiContract, isReady: isWxdaiContractReady } = useEthersContract(
-    [ provider, shallowRef(wxdaiContractAddress) ],
-    wxdaiContractAddress,
+    [ provider, shallowRef(WXDAI_CONTRACT_ADDRESS) ],
+    WXDAI_CONTRACT_ADDRESS,
     WXDAIABI,
     provider
   );
