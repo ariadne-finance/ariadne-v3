@@ -1,7 +1,7 @@
 <template>
-  <div class="bevel-border-flat">
+  <div class="">
     <button
-      class="beveled bg-error hover:bg-error/80 font-decorative font-normal text-white px-16 py-3 rounded"
+      class=" bg-error hover:bg-error/80 font-decorative font-normal text-white px-16 py-3 rounded"
       :disabled="disabled"
       v-bind="$attrs"
     >

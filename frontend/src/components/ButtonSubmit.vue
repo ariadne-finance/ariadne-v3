@@ -1,8 +1,8 @@
 <template>
-  <div class="bevel-border-flat">
+  <div class="">
     <button
       type="submit"
-      class="beveled bg-[#FF7A00] hover:bg-[#F36900] font-decorative font-normal text-white px-16 py-3 rounded flex items-center justify-center"
+      class="bg-[#FF7A00] hover:bg-[#F36900] font-decorative font-normal text-white px-16 py-3 rounded flex items-center justify-center"
       :disabled="disabled"
       v-bind="$attrs"
     >
