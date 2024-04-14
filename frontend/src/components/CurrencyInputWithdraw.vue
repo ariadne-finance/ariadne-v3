@@ -45,7 +45,7 @@
         leave-to-class="transform scale-95 opacity-0"
       >
         <MenuItems
-          class="absolute z-10 right-0 mt-1 origin-top-right divide-y rounded-xl theme-background theme-border theme-color shadow-lg focus:outline-none"
+          class="absolute z-10 right-0 mt-1 origin-top-right divide-y rounded-xl shadow-lg focus:outline-none"
         >
           <MenuItem
             v-for="token in tokens"
@@ -55,7 +55,7 @@
             <button
               type="button"
               :class="[
-                active ? 'bg-primary-400 text-white' : 'theme-color opacity-70',
+                active ? 'bg-primary-400 text-white' : 'opacity-70',
                 'flex flex-nowrap gap-x-2 items-center w-full min-w-max rounded-xl px-4 py-2 !border-0 shadow-none',
               ]"
               @click="tokenClicked(token)"

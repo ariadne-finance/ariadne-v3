@@ -42,8 +42,6 @@
           <button-submit class="w-full mt-8" :disabled="!isDepositButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Deposit</button-submit>
         </form>
 
-        <hr/>
-
         My balance: {{ asdaiBalanceAsWxdaiHr }} WXDAI
         <br>
 
@@ -385,7 +383,6 @@ async function deposit() {
     console.error(error);
     alert("Error confirming deposit.");
   }
-
 
   isMetamaskBusy.value = false;
   depositInput.value.reset();

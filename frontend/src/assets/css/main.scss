@@ -83,17 +83,12 @@ body {
   top: 0;
 }
 
-.theme-color {
-  color: #6ee38c;
-}
-
 #app {
   width: 100%;
   height: 100%;
   overflow: auto;
   position: relative;
-
-  @apply theme-color;
+  color: #6ee38c;
 
   &:before {
     content: '';
@@ -139,7 +134,7 @@ body {
   // }
 
   .btn {
-    @apply inline-flex items-center py-1.5 px-3.5 text-xl font-normal cursor-pointer select-none hover:brightness-125 transition-colors duration-300;
+    @apply inline-flex items-center py-1.5 px-3.5 mb-2 text-xl font-normal cursor-pointer select-none hover:brightness-125 transition-colors duration-300;
     line-height: 1.25;
     &:not(.btn-link) {
       box-shadow: 10px 10px 0 #000000;
@@ -184,24 +179,6 @@ body {
 
   .stats-link {
     @apply text-ellipsis overflow-hidden underline decoration-slate-300 dark:decoration-slate-600 underline-offset-4 cursor-pointer;
-  }
-
-  .theme-background {
-    background-color: rgb(255, 255, 255);
-    .dark & {
-      background-color: rgb(26, 29, 38);
-    }
-  }
-
-  .theme-border {
-    border: rgb(194, 196, 201) 1px solid;
-    .dark & {
-      border: rgb(51, 57, 75) 1px solid;
-    }
-  }
-
-  .theme-radius {
-    border-radius: 16px;
   }
 
   .rounded-2\.5 {

@@ -2,7 +2,7 @@
   <div class="">
     <button
       type="submit"
-      class="bg-[#FF7A00] hover:bg-[#F36900] font-decorative font-normal text-white px-16 py-3 rounded flex items-center justify-center"
+      class="btn bg-primary-100 disabled:bg-primary-500"
       :disabled="disabled"
       v-bind="$attrs"
     >
