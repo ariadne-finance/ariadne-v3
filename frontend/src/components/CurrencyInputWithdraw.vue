@@ -7,7 +7,7 @@
       :placeholder="placeholderText"
       :disabled="disabled"
       type="text"
-      class="w-full border-2 border-primary-400 focus:border-primary-300 ring-0 focus:ring-4 focus:ring-primary-500/30 text-xl font-bold bg-black/30 placeholder:text-primary-400 h-[42px] items-center justify-between py-0 pl-6 pr-40"
+      class="w-full border-2 border-primary-400 focus:border-primary-300 ring-0 focus:ring-4 focus:ring-primary-500/30 text-xl font-bold bg-black/30 placeholder:text-primary-400 h-[42px] items-center justify-between py-0 pl-4 pr-40"
       :class="!isAmountValid ? 'ring-2 ring-red-500' : ''"
 
       autocomplete="off"
@@ -28,7 +28,7 @@
           ><path d="M165.66,101.66,139.31,128l26.35,26.34a8,8,0,0,1-11.32,11.32L128,139.31l-26.34,26.35a8,8,0,0,1-11.32-11.32L116.69,128,90.34,101.66a8,8,0,0,1,11.32-11.32L128,116.69l26.34-26.35a8,8,0,0,1,11.32,11.32ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z" /></svg>
         </div>
         <div class="text-2xl mr-1">[</div>
-        <div v-if="selectedWithdrawToken" class="flex flex-nowrap gap-x-2 items-center pr-4">
+        <div v-if="selectedWithdrawToken" class="flex flex-nowrap gap-x-2 items-center pr-2">
           <div class="shrink-0 inline-flex items-center justify-center dark:opacity-90">
             <img class="block w-5 h-5" :src="selectedWithdrawTokenImgSrc" alt="">
           </div>
