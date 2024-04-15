@@ -34,7 +34,7 @@
 
           <div class="flex flex-col space-y-1 lg:flex-row lg:space-x-1 lg:space-y-0 m-1">
             <form class="w-full max-w-[600px] border-2 border-primary-400 pb-4" @submit.prevent="deposit">
-              <div class="text-center p-2 text-xl">DEPOSIT</div>
+              <div class="mt-4 text-center p-2 text-xl">DEPOSIT</div>
               <div class="flex flex-col sm:flex-row items-start space-x-1 m-4">
                 <div class="grow">
                   <currency-input-withdraw
@@ -62,7 +62,7 @@
             </form>
 
             <form class="w-full max-w-[600px] border-2 border-primary-400 pb-4" @submit.prevent="withdraw">
-              <div class="text-center p-2 text-xl">WITHDRAW</div>
+              <div class="mt-4 text-center p-2 text-xl">WITHDRAW</div>
               <div class="flex flex-col sm:flex-row items-start space-x-1 m-4">
                 <div class="grow">
                   <currency-input-withdraw
