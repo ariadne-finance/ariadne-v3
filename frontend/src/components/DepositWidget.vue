@@ -2,7 +2,7 @@
   <loading-spinner v-if="!isReady" class="text-primary-500"> Loading... </loading-spinner>
 
   <centered-layout v-else>
-    <div class="absolute top-4 left-4">
+    <div class="absolute top-4 left-4 hidden sm:block">
       <the-logo class="h-10" />
     </div>
 
