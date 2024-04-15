@@ -280,3 +280,22 @@ body {
     opacity: 0;
   }
 }
+
+@function dot-image-url($color) {
+  @return url("data:image/svg+xml,%3Csvg width='10' height='10' viewBox='0 0 10 10' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='2' height='2' fill='" + $color + "' /%3E%3C/svg%3E%0A");
+}
+
+.title-dotted {
+  display: inline-block;
+  background-color: #3c7a4e;
+  padding: 0 15px;
+  color: #79fba2;
+  &::before{
+    content: "";
+    position: absolute;
+    inset: 5px;
+    background-image: dot-image-url(#1f2d2380);
+    background-repeat: repeat;
+    z-index: -1;
+  }
+}

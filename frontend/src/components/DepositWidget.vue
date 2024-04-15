@@ -8,15 +8,6 @@
 
     <div class="flex justify-center items-center text-left">
       <div class="py-10">
-        <template v-if="isApyReady">
-          agave vault apy: {{ formatUnits(apy.agaveVaultApy, 18, 2, 2) }}% <br>
-          collateral leverage: &times;{{ formatUnits(apy.collateralLeverage, 5, 2, 2) }} <br>
-          leveragedAgaveVaultApy: {{ formatUnits(apy.leveragedAgaveVaultApy, 18, 2, 2) }}% <br>
-          aave wxdai borrow rate: {{ formatUnits(apy.aaveVariableBorrowRate, 18, 2, 2) }}% <br>
-          debt leverage: &times;{{ formatUnits(apy.debtLeverage, 5, 2, 2) }} <br>
-          leveraged wxdai borrow rate: {{ formatUnits(apy.leveragedWxdaiBorrowRate, 18, 2, 2) }}% <br>
-        </template>
-
         <div class="border-2 border-primary-400">
           <div class="bg-black/10 border-b-2 border-primary-400 flex items-center p-4 space-x-8">
             <div class="grow">
@@ -27,7 +18,9 @@
               <span class="text-primary-400">My balance:</span> {{ asdaiBalanceAsWxdaiHr }} WXDAI
             </div>
             <div class="shrink-0 text-xl">
-              <span class="text-primary-400">APY:</span> {{ apyHr }}
+              <span class="text-primary-400">APY:</span>
+              {{ apyHr }}
+              <button class="btn-link px-0 hover:text-primary-100" @click="showApyModal">[i]</button>
             </div>
           </div>
 
@@ -111,6 +104,8 @@ import { useWallet } from '@/useWallet';
 import { useAsdai } from '@/useAsdai';
 import { apy, isApyReady, loadApy } from '@/apy';
 import { decodeError, DEPOSIT_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR, WITHDRAW_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR } from '@/asdaiErrors';
+import { Modal } from '@/useModal';
+import ModalApy from '@/components/ModalApy.vue';
 
 const isMetamaskBusy = shallowRef(false);
 
@@ -425,6 +420,14 @@ async function deposit() {
   }
 
   alert("Deposited " + formatUnits(withdrawalEvent.args?.amountWxdai, 18, 4, 4) + " WXDAI");
+}
+
+function showApyModal() {
+  Modal.alert({
+    title: 'APY Info',
+    component: ModalApy,
+    componentData: { apy: apy.value }
+  });
 }
 </script>
 

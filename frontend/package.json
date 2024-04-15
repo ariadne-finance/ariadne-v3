@@ -15,6 +15,7 @@
     "@headlessui/vue": "^1.7.18",
     "@tailwindcss/forms": "^0.5.7",
     "@vitejs/plugin-vue": "^5.0.3",
+    "@vueuse/core": "^10.9.0",
     "@web3-onboard/injected-wallets": "^2.10.11",
     "@web3-onboard/vue": "^2.7.12",
     "cssnano": "^6.0.3",
