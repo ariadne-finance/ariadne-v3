@@ -108,4 +108,4 @@ contracts/cache
 contracts/artifacts
 contracts/deployments
 contracts/fork-*
-
+frontend-dist/
