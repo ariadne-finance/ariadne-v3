@@ -336,7 +336,7 @@ async function withdraw() {
     return;
   }
 
-  alert("Withdrawn " + formatUnits(withdrawalEvent.args?.amountWxdai, 18, 4, 4) + " WXDAI");
+  alert("Withdrawn " + formatUnits(event.args?.amountWxdai, 18, 4, 4) + " WXDAI");
 }
 
 async function deposit() {
@@ -435,7 +435,7 @@ async function deposit() {
     return;
   }
 
-  alert("Deposited " + formatUnits(withdrawalEvent.args?.amountWxdai, 18, 4, 4) + " WXDAI");
+  alert("Deposited " + formatUnits(event.args?.amountWxdai, 18, 4, 4) + " WXDAI");
 }
 
 function showApyModal() {
