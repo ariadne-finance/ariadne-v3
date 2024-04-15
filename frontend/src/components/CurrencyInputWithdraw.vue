@@ -7,16 +7,16 @@
       :placeholder="placeholderText"
       :disabled="disabled"
       type="text"
-      class="w-full border-2 border-primary-400 focus:border-primary-300 text-xl font-bold bg-primary-600 placeholder:text-primary-400 h-[50px] items-center justify-between py-0 pl-6 pr-40"
+      class="w-full border-2 border-primary-400 focus:border-primary-300 ring-0 focus:ring-4 focus:ring-primary-500/30 text-xl font-bold bg-black/30 placeholder:text-primary-400 h-[42px] items-center justify-between py-0 pl-6 pr-40"
       :class="!isAmountValid ? 'ring-2 ring-red-500' : ''"
-      style="box-shadow: none;"
+
       autocomplete="off"
       @input="onInput"
     >
 
     <Menu v-if="!hideSelector" as="div" class="absolute right-0 inset-y-0 inline-block text-left">
       <MenuButton
-        class="inline-flex w-full justify-center items-center rounded-m p-4 h-full text-sm font-medium text-primary-400 focus:ring-0"
+        class="inline-flex w-full justify-center items-center rounded-m p-4 h-full text-sm font-medium text-primary-400 focus:ring-0 focus-visible:outline-none"
         :disabled="disabled"
       >
         <div v-if="amount" class="pr-4" @click.stop="reset">
@@ -48,9 +48,9 @@
         leave-to-class="transform scale-95 opacity-0"
       >
         <MenuItems
-          class="absolute z-10 -right-0.5 origin-top-right divide-y focus:outline-none bg-primary-600 p-0.5 shadow-[10px_10px_#000]"
+          class="absolute z-10 -right-1 origin-top-right divide-y focus:outline-none bg-primary-600 p-1 shadow-[10px_10px_#000]"
         >
-          <div class="border-2 border-primary-400 p-0.5">
+          <div class="border-2 border-primary-400 p-1">
             <MenuItem
               v-for="token in tokens"
               :key="token"
@@ -105,6 +105,10 @@ const props = defineProps({
     default: ''
   },
   max: {
+    type: [ Number, BigInt, null ],
+    default: null
+  },
+  min: {
     type: [ Number, BigInt, null ],
     default: null
   },

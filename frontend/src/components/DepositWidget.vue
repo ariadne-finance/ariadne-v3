@@ -20,50 +20,60 @@
           leveraged wxdai borrow rate: {{ formatUnits(apy.leveragedWxdaiBorrowRate, 18, 2, 2) }}% <br>
         </template>
 
-        <form class="w-full max-w-[400px] mt-8" @submit.prevent="deposit">
-          <currency-input-withdraw
-            ref="depositInput"
-            v-model="depositAmount"
-            v-model:selectedWithdrawToken="selectedDepositToken"
-            :decimals="18"
-            :display-decimals="4"
-            :max="selectedDepositTokenBalanceOrNative"
-            :min="settings.minDepositAmount"
-            :disabled="isMetamaskBusy"
-            :tokens="depositTokenSymbolList"
-            placeholder=""
-            class="grow mt-4"
-          /> <!-- FIXME show min -->
+        <form class="w-full max-w-[600px] mt-8" @submit.prevent="deposit">
+          <div class="flex items-start space-x-1">
+            <div class="grow">
+              <currency-input-withdraw
+                ref="depositInput"
+                v-model="depositAmount"
+                v-model:selectedWithdrawToken="selectedDepositToken"
+                :decimals="18"
+                :display-decimals="4"
+                :max="selectedDepositTokenBalanceOrNative"
+                :min="settings.minDepositAmount"
+                :disabled="isMetamaskBusy"
+                :tokens="depositTokenSymbolList"
+                placeholder=""
+              />
+              <!-- FIXME show min -->
+              <a class="font-semibold link-dashed text-primary-300" @click="depositMaxClicked">
+                max {{ selectedDepositTokenBalanceOrNativeHr }} {{ selectedDepositToken }}
+              </a>
+            </div>
 
-          <a class="font-semibold link-dashed text-primary-300" @click="depositMaxClicked">
-            max {{ selectedDepositTokenBalanceOrNativeHr }} {{ selectedDepositToken }}
-          </a>
-
-          <button-submit class="mt-8" :disabled="!isDepositButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Deposit</button-submit>
+            <div class="shrink-0">
+              <button-submit :disabled="!isDepositButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Deposit</button-submit>
+            </div>
+          </div>
         </form>
 
         My balance: {{ asdaiBalanceAsWxdaiHr }} WXDAI
         <br>
 
-        <form class="w-full max-w-[400px] mt-8" @submit.prevent="withdraw">
-          <currency-input-withdraw
-            ref="withdrawInput"
-            v-model="withdrawAmount"
-            v-model:selectedWithdrawToken="selectedWithdrawToken"
-            :decimals="18"
-            :display-decimals="4"
-            :max="asdaiBalanceAsWxdai"
-            :disabled="isMetamaskBusy"
-            :tokens="['WXDAI']"
-            placeholder=""
-            class="grow mt-4"
-          />
+        <form class="w-full max-w-[600px] mt-8" @submit.prevent="withdraw">
+          <div class="flex items-start space-x-1">
+            <div class="grow">
+              <currency-input-withdraw
+                ref="withdrawInput"
+                v-model="withdrawAmount"
+                v-model:selectedWithdrawToken="selectedWithdrawToken"
+                :decimals="18"
+                :display-decimals="4"
+                :max="asdaiBalanceAsWxdai"
+                :disabled="isMetamaskBusy"
+                :tokens="['WXDAI']"
+                placeholder=""
+              />
 
-          <a class="font-semibold link-dashed text-primary-300" @click="withdrawMaxClicked">
-            max {{ asdaiBalanceAsWxdaiHr }} WXDAI
-          </a>
+              <a class="font-semibold link-dashed text-primary-300" @click="withdrawMaxClicked">
+                max {{ asdaiBalanceAsWxdaiHr }} WXDAI
+              </a>
+            </div>
 
-          <button-submit class="mt-8" :disabled="!isWithdrawButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Withdraw</button-submit>
+            <div class="shrink-0">
+              <button-submit :disabled="!isWithdrawButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Withdraw</button-submit>
+            </div>
+          </div>
         </form>
       </div>
     </div>
