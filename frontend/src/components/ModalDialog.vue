@@ -54,7 +54,7 @@
                     <p v-else class="opacity-80" :class="{ 'text-error': isError }" v-html="body" />
                   </div>
 
-                  <div class="mt-0.5 sm:flex sm:flex-row-reverse sm:justify-around sm:items-center sm:h-20 border-2 border-primary-600">
+                  <div class="mt-0.5 flex flex-row-reverse justify-around items-center h-20 border-2 border-primary-600">
                     <button
                       ref="okButtonRef"
                       type="button"
