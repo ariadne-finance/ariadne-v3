@@ -35,11 +35,10 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .rectangles rect {
-  @apply text-primary-500;
   transition: stroke 400ms, stroke-width 400ms;
 }
 .rectangles rect.animate {
-  @apply text-primary-200;
+  @apply brightness-125;
   stroke-width: 3;
 }
 </style>

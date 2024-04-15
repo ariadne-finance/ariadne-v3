@@ -34,15 +34,17 @@
                   type="button"
                   class="btn btn-link text-primary-200 bg-primary-400 px-1 py-0 mb-0 items-baseline hover:brightness-100 hover:text-primary-200/60"
                   @click="hide(null)"
-                >&times;</button>
+                >
+                  &times;
+                </button>
               </div>
 
               <div class="w-full sm:flex sm:items-start border-2 border-primary-600 p-0.5">
                 <div class="w-full text-center sm:text-left">
-                  <DialogTitle v-if="title" as="h3" class="relative text-center text-lg font-medium leading-6 border-2 border-primary-600 h-9" :class="{ 'text-error': isError }">
+                  <DialogTitle v-if="title" as="h3" class="relative text-center text-lg font-medium leading-6 border-2 border-primary-600 h-9 mb-0.5" :class="{ 'text-error': isError }">
                     <div class="title-dotted text-2xl">{{ title }}</div>
                   </DialogTitle>
-                  <div class="mt-0.5 border-2 border-primary-600">
+                  <div class="border-2 border-primary-600">
                     <component
                       :is="component"
                       v-if="component"
@@ -56,7 +58,7 @@
                     <button
                       ref="okButtonRef"
                       type="button"
-                      class="btn bg-primary-100"
+                      class="btn bg-primary-100 focus:outline-none"
                       :class="isError ? 'btn-danger' : 'btn-primary'"
                       @click="okClickHandler"
                       v-html="okButton"
@@ -64,7 +66,7 @@
                     <button
                       v-if="cancelButton"
                       type="button"
-                      class="btn-primary mr-2"
+                      class="btn bg-primary-300 mr-2"
                       @click="hide"
                       v-html="cancelButton"
                     />

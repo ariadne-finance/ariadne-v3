@@ -1,5 +1,5 @@
 <template>
-  <loading-spinner v-if="!isReady"> Loading... </loading-spinner>
+  <loading-spinner v-if="!isReady" class="text-primary-500"> Loading... </loading-spinner>
 
   <centered-layout v-else>
     <div class="absolute top-4 left-4">
@@ -108,8 +108,20 @@ import { useWallet } from '@/useWallet';
 import { useAsdai } from '@/useAsdai';
 import { apy, isApyReady, loadApy } from '@/apy';
 import { decodeError, DEPOSIT_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR, WITHDRAW_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR } from '@/asdaiErrors';
-import { Modal } from '@/useModal';
+import { Modal, DepositModal } from '@/useModal';
 import ModalApy from '@/components/ModalApy.vue';
+
+const DEPOSIT_LABEL_DEPOSITING = 'Depositing...';
+const DEPOSIT_LABEL_CONFIRMING = 'Confirming...';
+const DEPOSIT_LABEL_SUCCESS = 'Success!';
+
+const depositModalSteps = [
+  DEPOSIT_LABEL_DEPOSITING,
+  DEPOSIT_LABEL_CONFIRMING,
+  DEPOSIT_LABEL_SUCCESS
+];
+
+DepositModal.open(depositModalSteps); // FIXME
 
 const isMetamaskBusy = shallowRef(false);
 
@@ -430,7 +442,8 @@ function showApyModal() {
   Modal.alert({
     title: 'APY Info',
     component: ModalApy,
-    componentData: { apy: apy.value }
+    componentData: { apy: apy.value },
+    okButton: 'Okay, thanks'
   });
 }
 </script>
