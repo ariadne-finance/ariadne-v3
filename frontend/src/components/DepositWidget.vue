@@ -108,20 +108,8 @@ import { useWallet } from '@/useWallet';
 import { useAsdai } from '@/useAsdai';
 import { apy, isApyReady, loadApy } from '@/apy';
 import { decodeError, DEPOSIT_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR, WITHDRAW_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR } from '@/asdaiErrors';
-import { Modal, DepositModal } from '@/useModal';
+import { Modal, DepositModal, WithdrawModal } from '@/useModal';
 import ModalApy from '@/components/ModalApy.vue';
-
-const DEPOSIT_LABEL_DEPOSITING = 'Depositing...';
-const DEPOSIT_LABEL_CONFIRMING = 'Confirming...';
-const DEPOSIT_LABEL_SUCCESS = 'Success!';
-
-const depositModalSteps = [
-  DEPOSIT_LABEL_DEPOSITING,
-  DEPOSIT_LABEL_CONFIRMING,
-  DEPOSIT_LABEL_SUCCESS
-];
-
-DepositModal.open(depositModalSteps); // FIXME
 
 const isMetamaskBusy = shallowRef(false);
 
@@ -282,9 +270,14 @@ async function refetch() {
 }
 
 async function withdraw() {
-  const amountSnapped = snapTo100Percent(toValue(withdrawAmount), toValue(asdaiBalanceAsWxdai));
-
   isMetamaskBusy.value = true;
+
+  WithdrawModal.open([
+    'Withdrawing...',
+    'Success!'
+  ]);
+
+  const amountSnapped = snapTo100Percent(toValue(withdrawAmount), toValue(asdaiBalanceAsWxdai));
 
   let tr;
 
@@ -292,6 +285,7 @@ async function withdraw() {
     tr = await toValue(asdaiContract).connect(toValue(signer)).withdraw(amountSnapped);
 
   } catch (error) {
+    WithdrawModal.close();
     isMetamaskBusy.value = false;
 
     if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
@@ -301,14 +295,12 @@ async function withdraw() {
 
     const decodedError = decodeError(toValue(asdaiContract), error);
     if (!decodedError) {
-      alert("Error withdrawing.");
+      Modal.error("Error withdrawing.");
       return;
     }
 
     console.error(error);
-
-    const message = WITHDRAW_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR[decodedError.name] || "(unknown error)";
-    alert(message);
+    Modal.error(WITHDRAW_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR[decodedError.name] || "(unknown error)");
 
     return;
   }
@@ -317,10 +309,12 @@ async function withdraw() {
 
   try {
     transactionResponse = await tr.wait(4);
+    WithdrawModal.close();
 
   } catch (error) {
     console.error(error);
-    alert("Error confirming withdrawal.");
+    WithdrawModal.close();
+    Modal.error("Error confirming withdrawal.");
   }
 
   isMetamaskBusy.value = false;
@@ -332,26 +326,39 @@ async function withdraw() {
   const event = transactionResponse.logs.find(a => a.eventName === 'PositionWithdraw');
 
   if (!event) {
-    alert("Event not found");
+    Modal.error("Withdrawal event not found in transaction receipt");
     return;
   }
 
-  alert("Withdrawn " + formatUnits(event.args?.amountWxdai, 18, 4, 4) + " WXDAI");
+  Modal.alert({
+    title: "Success!",
+    body: `Withdrawn ${formatUnits(event.args?.amountWxdai, 18, 4, 4)} WXDAI`
+  });
 }
 
 async function deposit() {
+  isMetamaskBusy.value = true;
+
+  const steps = [
+    'Approving...',
+    'Depositing...',
+    'Success!'
+  ];
+
   const amountSnapped = toValue(isDepositTokenNativeCurrency)
     ? toValue(depositAmount)
     : snapTo100Percent(toValue(depositAmount), toValue(selectedDepositTokenBalanceOrNative));
 
-  isMetamaskBusy.value = true;
-
   if (toValue(isDepositTokenNativeCurrency)) {
+    steps.unshift('Wrapping XDAI...');
+    DepositModal.open(steps);
+
     try {
       const tr = await toValue(wxdaiContract).connect(toValue(signer)).deposit({ value: toValue(amountSnapped) });
       await tr.wait(2);
 
     } catch (error) {
+      DepositModal.close();
       isMetamaskBusy.value = false;
 
       if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
@@ -360,20 +367,25 @@ async function deposit() {
       }
 
       console.error(error);
-      alert("Error wrapping XDAI into WXDAI!");
+      Modal.error("Error wrapping XDAI into WXDAI!");
       return;
     }
+
+    DepositModal.nextStep();
+
+  } else {
+    DepositModal.open(steps);
   }
 
   let tr;
 
   const allowance = await toValue(wxdaiContract).allowance(address.value, toValue(asdaiContract).address);
-
   if (allowance < amountSnapped) {
     try {
       tr = await toValue(wxdaiContract).connect(toValue(signer)).approve(toValue(asdaiContract).address, amountSnapped);
 
     } catch (error) {
+      DepositModal.close();
       isMetamaskBusy.value = false;
 
       if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
@@ -382,15 +394,18 @@ async function deposit() {
       }
 
       console.error(error);
-      alert("Error approving");
+      Modal.error("Error approving");
       return;
     }
   }
+
+  DepositModal.nextStep();
 
   try {
     tr = await toValue(asdaiContract).connect(toValue(signer)).deposit(amountSnapped);
 
   } catch (error) {
+    DepositModal.close();
     isMetamaskBusy.value = false;
 
     if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
@@ -400,14 +415,13 @@ async function deposit() {
 
     const decodedError = decodeError(toValue(asdaiContract), error);
     if (!decodedError) {
-      alert("Error depositing.");
+      Modal.error("Error depositing.");
       return;
     }
 
     console.error(error);
 
-    const message = DEPOSIT_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR[decodedError.name] || "(unknown error)";
-    alert(message);
+    Modal.error(DEPOSIT_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR[decodedError.name] || "(unknown error)");
 
     return;
   }
@@ -416,10 +430,12 @@ async function deposit() {
 
   try {
     transactionResponse = await tr.wait(4);
+    DepositModal.close();
 
   } catch (error) {
+    DepositModal.close();
     console.error(error);
-    alert("Error confirming deposit.");
+    Modal.alert("Error confirming deposit.");
   }
 
   isMetamaskBusy.value = false;
@@ -431,11 +447,14 @@ async function deposit() {
   const event = transactionResponse.logs.find(a => a.eventName === 'PositionDeposit');
 
   if (!event) {
-    alert("Event not found");
+    Modal.error("Deposit event not found in transaction receipt");
     return;
   }
 
-  alert("Deposited " + formatUnits(event.args?.amountWxdai, 18, 4, 4) + " WXDAI");
+  Modal.alert({
+    title: "Success!",
+    body: `Deposited ${formatUnits(event.args?.amountWxdai, 18, 4, 4)} WXDAI`
+  });
 }
 
 function showApyModal() {
