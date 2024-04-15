@@ -2,16 +2,13 @@
   <loading-spinner v-if="!isReady"> Loading... </loading-spinner>
 
   <centered-layout v-else>
+    <div class="absolute -top-20 left-0">
+      <the-logo class="h-10" />
+    </div>
+
     <div class="flex justify-center items-center text-left">
       <div class="py-10">
-        <div class="mb-8">
-          <the-logo class="h-10" />
-        </div>
-
-        APY: {{ apyHr }}
-
         <template v-if="isApyReady">
-          <br>
           agave vault apy: {{ formatUnits(apy.agaveVaultApy, 18, 2, 2) }}% <br>
           collateral leverage: &times;{{ formatUnits(apy.collateralLeverage, 5, 2, 2) }} <br>
           leveragedAgaveVaultApy: {{ formatUnits(apy.leveragedAgaveVaultApy, 18, 2, 2) }}% <br>
@@ -20,61 +17,81 @@
           leveraged wxdai borrow rate: {{ formatUnits(apy.leveragedWxdaiBorrowRate, 18, 2, 2) }}% <br>
         </template>
 
-        <form class="w-full max-w-[600px] mt-8" @submit.prevent="deposit">
-          <div class="flex items-start space-x-1">
+        <div class="border-2 border-primary-400">
+          <div class="bg-black/10 border-b-2 border-primary-400 flex items-center p-4 space-x-8">
             <div class="grow">
-              <currency-input-withdraw
-                ref="depositInput"
-                v-model="depositAmount"
-                v-model:selectedWithdrawToken="selectedDepositToken"
-                :decimals="18"
-                :display-decimals="4"
-                :max="selectedDepositTokenBalanceOrNative"
-                :min="settings.minDepositAmount"
-                :disabled="isMetamaskBusy"
-                :tokens="depositTokenSymbolList"
-                placeholder=""
-              />
-              <!-- FIXME show min -->
-              <a class="font-semibold link-dashed text-primary-300" @click="depositMaxClicked">
-                max {{ selectedDepositTokenBalanceOrNativeHr }} {{ selectedDepositToken }}
-              </a>
+              FIXME
             </div>
 
-            <div class="shrink-0">
-              <button-submit :disabled="!isDepositButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Deposit</button-submit>
+            <div class="shrink-0 text-xl">
+              <span class="text-primary-400">My balance:</span> {{ asdaiBalanceAsWxdaiHr }} WXDAI
+            </div>
+            <div class="shrink-0 text-xl">
+              <span class="text-primary-400">APY:</span> {{ apyHr }}
             </div>
           </div>
-        </form>
 
-        My balance: {{ asdaiBalanceAsWxdaiHr }} WXDAI
-        <br>
-
-        <form class="w-full max-w-[600px] mt-8" @submit.prevent="withdraw">
-          <div class="flex items-start space-x-1">
-            <div class="grow">
-              <currency-input-withdraw
-                ref="withdrawInput"
-                v-model="withdrawAmount"
-                v-model:selectedWithdrawToken="selectedWithdrawToken"
-                :decimals="18"
-                :display-decimals="4"
-                :max="asdaiBalanceAsWxdai"
-                :disabled="isMetamaskBusy"
-                :tokens="['WXDAI']"
-                placeholder=""
-              />
-
-              <a class="font-semibold link-dashed text-primary-300" @click="withdrawMaxClicked">
-                max {{ asdaiBalanceAsWxdaiHr }} WXDAI
-              </a>
-            </div>
-
-            <div class="shrink-0">
-              <button-submit :disabled="!isWithdrawButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Withdraw</button-submit>
-            </div>
+          <div class="px-4 py-6 text-center">
+            You have no power here
           </div>
-        </form>
+
+          <div class="flex flex-col space-y-1 lg:flex-row lg:space-x-1 lg:space-y-0 m-1">
+            <form class="w-full max-w-[600px] border-2 border-primary-400 pb-4" @submit.prevent="deposit">
+              <div class="bg-primary-200/5 text-center p-2 text-xl">DEPOSIT</div>
+              <div class="flex items-start space-x-1 m-4">
+                <div class="grow">
+                  <currency-input-withdraw
+                    ref="depositInput"
+                    v-model="depositAmount"
+                    v-model:selectedWithdrawToken="selectedDepositToken"
+                    :decimals="18"
+                    :display-decimals="4"
+                    :max="selectedDepositTokenBalanceOrNative"
+                    :min="settings.minDepositAmount"
+                    :disabled="isMetamaskBusy"
+                    :tokens="depositTokenSymbolList"
+                    placeholder=""
+                  />
+                  <!-- FIXME show min -->
+                  <a class="font-semibold link-dashed text-primary-300" @click="depositMaxClicked">
+                    max {{ selectedDepositTokenBalanceOrNativeHr }} {{ selectedDepositToken }}
+                  </a>
+                </div>
+
+                <div class="shrink-0">
+                  <button-submit :disabled="!isDepositButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Deposit</button-submit>
+                </div>
+              </div>
+            </form>
+
+            <form class="w-full max-w-[600px] border-2 border-primary-400 pb-4" @submit.prevent="withdraw">
+              <div class="bg-primary-200/5 text-center p-2 text-xl">WITHDRAW</div>
+              <div class="flex items-start space-x-1 m-4">
+                <div class="grow">
+                  <currency-input-withdraw
+                    ref="withdrawInput"
+                    v-model="withdrawAmount"
+                    v-model:selectedWithdrawToken="selectedWithdrawToken"
+                    :decimals="18"
+                    :display-decimals="4"
+                    :max="asdaiBalanceAsWxdai"
+                    :disabled="isMetamaskBusy"
+                    :tokens="['WXDAI']"
+                    placeholder=""
+                  />
+
+                  <a class="font-semibold link-dashed text-primary-300" @click="withdrawMaxClicked">
+                    max {{ asdaiBalanceAsWxdaiHr }} WXDAI
+                  </a>
+                </div>
+
+                <div class="shrink-0">
+                  <button-submit :disabled="!isWithdrawButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Withdraw</button-submit>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   </centered-layout>

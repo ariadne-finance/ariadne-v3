@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col grow justify-around items-center w-full h-full px-4">
-    <div class="mt-20 px-4 py-8 xs:px-[35px] xs:py-12 mb-8 sm:max-w-4xl w-full text-center">
+    <div class="mt-20 px-4 py-8 xs:px-[35px] xs:py-12 mb-8 sm:max-w-7xl w-full text-center relative">
       <slot />
     </div>
 
