@@ -51,7 +51,7 @@
                       :data="componentData"
                       @close="hide"
                     />
-                    <p v-else class="opacity-80" :class="{ 'text-error': isError }" v-html="body" />
+                    <p v-else class="opacity-80 p-2" :class="{ 'text-error': isError }" v-html="body" />
                   </div>
 
                   <div class="mt-0.5 flex flex-row-reverse justify-around items-center h-20 border-2 border-primary-600">
