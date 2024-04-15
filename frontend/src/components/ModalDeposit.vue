@@ -1,12 +1,12 @@
 <template>
   <div class="sm:min-w-[300px] flex flex-col">
     <div class="shink-0 font-bold text-center mb-10 mt-4">
-      Deposit into
+      Deposit into vault
     </div>
 
     <div class="shrink-0 flex justify-center">
       <svg
-        v-if="currentStep == DEPOSIT_LABEL_SUCCESS"
+        v-if="currentStep == SUCCESS"
         class="animate-ping-once h-10 w-10 text-green-500 fill-green-500"
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
@@ -25,7 +25,7 @@
       <button class="btn-primary" @click="emit('close')">Close</button>
     </div>
 
-    <div v-if="data.steps?.length > 1 && currentStep != DEPOSIT_LABEL_SUCCESS" class="shrink-0 mt-4 mb-6">
+    <div v-if="data.steps?.length > 1 && currentStep != SUCCESS" class="shrink-0 mt-4 mb-6">
       <div class="flex flex-row items-center justify-center gap-x-2">
         <div
           v-for="step in data.steps?.length"
@@ -42,12 +42,7 @@
 import { watch, computed } from 'vue';
 import LoadingSpinner from './LoadingSpinner.vue';
 
-// We can use custom templates like this: <template v-if="currentStep == DEPOSIT_LABEL_WRAPPING"></template>
-// const DEPOSIT_LABEL_WRAPPING = 'Wrapping ETH...';
-// const DEPOSIT_LABEL_APPROVING = 'Approving...';
-// const DEPOSIT_LABEL_DEPOSITING = 'Depositing...';
-// const DEPOSIT_LABEL_CONFIRMING = 'Confirming...';
-const DEPOSIT_LABEL_SUCCESS = 'Success!';
+const SUCCESS = 'Success!';
 
 const props = defineProps({
   data: {
