@@ -38,7 +38,7 @@
               </div>
 
               <div class="w-full sm:flex sm:items-start border-2 border-primary-600 p-0.5">
-                <div class="w-full mt-3 text-center sm:mt-0 sm:text-left">
+                <div class="w-full text-center sm:text-left">
                   <DialogTitle v-if="title" as="h3" class="relative text-center text-lg font-medium leading-6 border-2 border-primary-600 h-9" :class="{ 'text-error': isError }">
                     <div class="title-dotted text-2xl">{{ title }}</div>
                   </DialogTitle>

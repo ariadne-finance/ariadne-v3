@@ -2,14 +2,18 @@
   <loading-spinner v-if="!isReady"> Loading... </loading-spinner>
 
   <centered-layout v-else>
-    <div class="absolute -top-20 left-0">
+    <div class="absolute top-4 left-4">
       <the-logo class="h-10" />
     </div>
 
     <div class="flex justify-center items-center text-left">
-      <div class="py-10">
+      <div class="py-10 mt-12">
+        <div class="text-center sm:hidden mb-4">
+          <the-logo class="h-10" />
+        </div>
+
         <div class="border-2 border-primary-400">
-          <div class="bg-black/10 border-b-2 border-primary-400 flex items-center p-4 space-x-8">
+          <div class="bg-black/10 border-b-2 border-primary-400 flex items-center p-4 space-x-8 flex-col sm:flex-row">
             <div class="grow">
               FIXME
             </div>
@@ -31,7 +35,7 @@
           <div class="flex flex-col space-y-1 lg:flex-row lg:space-x-1 lg:space-y-0 m-1">
             <form class="w-full max-w-[600px] border-2 border-primary-400 pb-4" @submit.prevent="deposit">
               <div class="bg-primary-200/5 text-center p-2 text-xl">DEPOSIT</div>
-              <div class="flex items-start space-x-1 m-4">
+              <div class="flex flex-col sm:flex-row items-start space-x-1 m-4">
                 <div class="grow">
                   <currency-input-withdraw
                     ref="depositInput"
@@ -51,7 +55,7 @@
                   </a>
                 </div>
 
-                <div class="shrink-0">
+                <div class="shrink-0 w-full sm:w-auto text-center mt-6 sm:mt-0">
                   <button-submit :disabled="!isDepositButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Deposit</button-submit>
                 </div>
               </div>
@@ -59,7 +63,7 @@
 
             <form class="w-full max-w-[600px] border-2 border-primary-400 pb-4" @submit.prevent="withdraw">
               <div class="bg-primary-200/5 text-center p-2 text-xl">WITHDRAW</div>
-              <div class="flex items-start space-x-1 m-4">
+              <div class="flex flex-col sm:flex-row items-start space-x-1 m-4">
                 <div class="grow">
                   <currency-input-withdraw
                     ref="withdrawInput"
@@ -78,7 +82,7 @@
                   </a>
                 </div>
 
-                <div class="shrink-0">
+                <div class="shrink-0 w-full sm:w-auto text-center mt-6 sm:mt-0">
                   <button-submit :disabled="!isWithdrawButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Withdraw</button-submit>
                 </div>
               </div>
