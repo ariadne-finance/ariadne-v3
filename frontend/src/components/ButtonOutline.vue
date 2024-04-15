@@ -1,6 +1,6 @@
 <template>
   <div>
-    <button class="font-decorative font-normal text-white px-16 py-3 rounded" v-bind="$attrs">
+    <button class="btn font-normal bg-primary-500 px-16 py-3 rounded" v-bind="$attrs">
       <slot />
     </button>
   </div>

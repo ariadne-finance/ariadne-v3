@@ -5,7 +5,7 @@
     <div class="flex justify-center items-center text-left">
       <div class="py-10">
         <div class="mb-8">
-          <the-logo />
+          <the-logo class="h-10" />
         </div>
 
         APY: {{ apyHr }}
@@ -35,11 +35,11 @@
             class="grow mt-4"
           /> <!-- FIXME show min -->
 
-          <a class="font-semibold link-dashed text-slate-400" @click="depositMaxClicked">
+          <a class="font-semibold link-dashed text-primary-300" @click="depositMaxClicked">
             max {{ selectedDepositTokenBalanceOrNativeHr }} {{ selectedDepositToken }}
           </a>
 
-          <button-submit class="w-full mt-8" :disabled="!isDepositButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Deposit</button-submit>
+          <button-submit class="mt-8" :disabled="!isDepositButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Deposit</button-submit>
         </form>
 
         My balance: {{ asdaiBalanceAsWxdaiHr }} WXDAI
@@ -59,11 +59,11 @@
             class="grow mt-4"
           />
 
-          <a class="font-semibold link-dashed text-slate-400" @click="withdrawMaxClicked">
+          <a class="font-semibold link-dashed text-primary-300" @click="withdrawMaxClicked">
             max {{ asdaiBalanceAsWxdaiHr }} WXDAI
           </a>
 
-          <button-submit class="w-full mt-8" :disabled="!isWithdrawButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Withdraw</button-submit>
+          <button-submit class="mt-8" :disabled="!isWithdrawButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Withdraw</button-submit>
         </form>
       </div>
     </div>

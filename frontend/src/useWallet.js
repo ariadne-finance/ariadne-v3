@@ -42,13 +42,13 @@ const appMetadata = {
 };
 
 const customTheme = {
-  '--w3o-background-color': '#ffffff',
-  '--w3o-foreground-color': '#EFF1FC',
+  '--w3o-background-color': '#3b724b',
+  '--w3o-foreground-color': '#206735',
   '--w3o-text-color': '#1a1d26',
-  '--w3o-border-color': '#d0d4f7',
-  '--w3o-action-color': '#1970b3',
-  '--w3o-border-radius': '16px',
-  '--w3o-font-family': 'inherit'
+  '--w3o-border-color': '#4fa467',
+  '--w3o-action-color': '#6ee38c',
+  '--w3o-border-radius': '0',
+  '--w3o-font-family': 'DOS'
 };
 
 export function init() {

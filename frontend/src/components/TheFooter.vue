@@ -29,10 +29,14 @@
     <div class="copyright">
       <div class="grow" />
       <div class="shrink-0 inverted mx-2 text-lg">
-        © 2021-2023 ARIADNE
+        © 2021-{{ year }} ARIADNE
         <span class="mx-1 mt-[3px] opacity-80">🇺🇦</span>
       </div>
       <div class="grow" />
     </div>
   </footer>
 </template>
+
+<script setup>
+const year = new Date().getFullYear();
+</script>
