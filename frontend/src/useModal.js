@@ -21,8 +21,8 @@ export const DepositModal = {
     Modal.dialog({
       component: ModalDeposit,
       isCloseButtonVisible: false,
-      componentData: depositModalData,
-      modalClass: 'border-slate-600 dark:border-slate-400'
+      hideButtons: true,
+      componentData: depositModalData
     });
   },
   close: () => {
@@ -45,8 +45,8 @@ export const WithdrawModal = {
     Modal.dialog({
       component: ModalWithdraw,
       isCloseButtonVisible: false,
-      componentData: withdrawModalData,
-      modalClass: 'border-slate-600 dark:border-slate-400'
+      hideButtons: true,
+      componentData: withdrawModalData
     });
   },
   close: () => {
