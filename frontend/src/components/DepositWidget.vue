@@ -12,7 +12,7 @@
           <the-logo class="h-10" />
         </div>
 
-        <div class="border-2 border-primary-400">
+        <div class="border-2 border-primary-400 shadow-custom">
           <div class="bg-black/10 border-b-2 border-primary-400 flex items-center p-4 space-x-8 flex-col sm:flex-row">
             <div class="grow">
               FIXME
