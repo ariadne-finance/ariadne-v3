@@ -1,7 +1,7 @@
 <template>
   <div class="">
     <button
-      class="btn bg-error hover:bg-error/80 font-normal text-black px-16 py-3"
+      class="btn bg-amber hover:bg-amber/80 font-normal text-black px-16 py-3"
       :disabled="disabled"
       v-bind="$attrs"
     >

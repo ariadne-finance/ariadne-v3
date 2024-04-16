@@ -13,10 +13,6 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'silver': '#40434A',
-        'accent': '#FF7A00',
-        'error': '#c87e4c',
-
         'amber': '#ffb000',
         'amber-dark': '#cd8d04',
         'primary': {

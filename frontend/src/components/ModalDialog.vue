@@ -26,7 +26,7 @@
             leave-to="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
           >
             <DialogPanel
-              class="relative transform overflow-hidden p-0.5 text-left transition-all sm:my-8 sm:w-full sm:min-w-[300px] sm:max-w-max overflow-y-auto bg-primary-400"
+              class="relative transform overflow-hidden p-0.5 text-left transition-all sm:my-8 sm:w-full sm:min-w-[400px] sm:max-w-max overflow-y-auto bg-primary-400"
               :class="modalClass"
             >
               <div v-if="isCloseButtonVisible" class="absolute top-2 right-6 z-10">
@@ -41,7 +41,7 @@
 
               <div class="w-full sm:flex sm:items-start border-2 border-primary-600 p-0.5">
                 <div class="w-full text-center sm:text-left">
-                  <DialogTitle v-if="title" as="h3" class="relative text-center text-lg font-medium leading-6 border-2 border-primary-600 h-9 mb-0.5" :class="{ 'text-error': isError }">
+                  <DialogTitle v-if="title" as="h3" class="relative text-center text-lg font-medium leading-6 border-2 border-primary-600 h-9 mb-0.5" :class="{ 'text-amber': isError }">
                     <div class="title-dotted text-2xl">{{ title }}</div>
                   </DialogTitle>
                   <div class="border-2 border-primary-600">
@@ -51,10 +51,10 @@
                       :data="componentData"
                       @close="hide"
                     />
-                    <p v-else class="opacity-80 p-2" :class="{ 'text-error': isError }" v-html="body" />
+                    <p v-else class="opacity-80 p-2" :class="{ 'text-amber': isError }" v-html="body" />
                   </div>
 
-                  <div class="mt-0.5 flex flex-row-reverse justify-around items-center h-20 border-2 border-primary-600">
+                  <div v-if="!hideButtons" class="mt-0.5 flex flex-row-reverse justify-around items-center h-20 border-2 border-primary-600">
                     <button
                       ref="okButtonRef"
                       type="button"
@@ -100,6 +100,7 @@ const body = shallowRef(null);
 const validation = shallowRef(null);
 const cancelButton = shallowRef('Cancel');
 const okButton = shallowRef('Ok');
+const hideButtons = shallowRef(false);
 
 // Note: component must be passed as raw, use markRaw() to avoid Vue warning
 const component = shallowRef(null);
@@ -137,6 +138,7 @@ function applyOptions(options = {}) {
   afterHideHandler.value = options.afterHideHandler || null;
   modalClass.value = options.modalClass || null;
   isCloseButtonVisible.value = options.isCloseButtonVisible ?? true;
+  hideButtons.value = options.hideButtons ?? false;
 }
 
 function alert(options = {}) {
