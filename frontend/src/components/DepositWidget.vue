@@ -13,9 +13,10 @@
         </div>
 
         <div class="border-2 border-primary-400 shadow-custom">
-          <div class="bg-black/10 border-b-2 border-primary-400 flex items-center p-4 space-x-8 flex-col sm:flex-row">
-            <div class="grow">
-              FIXME
+          <div class="bg-black/10 border-b-2 border-primary-400 flex items-center p-4 flex-col sm:flex-row sm:space-x-8">
+            <div class="grow mb-2 sm:-my-4">
+              <img src="/coins/dai-bg.png" class="size-8 inline-block rounded-full border-2 border-primary-400" alt="dai">
+              <img src="/coins/agave-bg.png" class="size-8 inline-block rounded-full border-2 border-primary-400 relative -left-2" alt="agave">
             </div>
 
             <div class="shrink-0 text-xl">
@@ -49,10 +50,15 @@
                     :tokens="depositTokenSymbolList"
                     placeholder=""
                   />
-                  <!-- FIXME show min -->
-                  <a class="font-semibold link-dashed text-primary-300" @click="depositMaxClicked">
-                    max {{ selectedDepositTokenBalanceOrNativeHr }} {{ selectedDepositToken }}
-                  </a>
+                  <div class="flex flex-col xs:flex-row justify-between">
+                    <a class="font-semibold link-dashed text-primary-300" @click="depositMaxClicked">
+                      max {{ selectedDepositTokenBalanceOrNativeHr }} {{ selectedDepositToken }}
+                    </a>
+
+                    <a class="font-semibold link-dashed text-primary-300" @click="depositMinClicked">
+                      min {{ formatUnits(settings.minDepositAmount, 18, 4, 4) }} {{ selectedDepositToken }}
+                    </a>
+                  </div>
                 </div>
 
                 <div class="shrink-0 w-full sm:w-auto text-center mt-6 sm:mt-0">
@@ -207,6 +213,11 @@ function depositMaxClicked() {
   }
 
   depositAmount.value = amount;
+  toValue(depositInput).setValue(toValue(depositAmount));
+}
+
+function depositMinClicked() {
+  depositAmount.value = toValue(settings).minDepositAmount;
   toValue(depositInput).setValue(toValue(depositAmount));
 }
 
