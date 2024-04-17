@@ -5,11 +5,10 @@ import IAaveOracleABI from '@abi/IAaveOracle.json';
 import { useEthersContractCall, useEthersContract } from '@/useEthersContractDependency';
 import { shallowRef, computed, toValue } from 'vue';
 import { useWallet } from '@/useWallet';
+import { ASDAI_CONTRACT_ADDRESS } from '@/constants';
 
 export function useAsdai() {
   const { provider } = useWallet();
-
-  const ASDAI_CONTRACT_ADDRESS = '0xDE9D935D7ad652b2c6F4CF3e9F615a905530F25B';
 
   const { contract: asdaiContract, isReady: isAsdaiContractReady } = useEthersContract(
     [ provider, shallowRef(ASDAI_CONTRACT_ADDRESS) ],

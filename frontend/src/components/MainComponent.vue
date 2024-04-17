@@ -1,8 +1,25 @@
 <template>
   <centered-layout v-if="!connectedWallet">
+    <!-- FIXME design add logo to this page in unconnected state -->
     <div class="pb-20 relative">
       <div class="max-w-max mx-auto text-left">
-        <the-title />
+        <div class="relative md:pr-4"> <!-- FIXME design text block -->
+          This onchain strategy leverages sDai on Gnosis blockchain — a high APY on your stables with minimum risk.
+          You can bridge stables to Gnosis <a class="underline" href="https://www.bungee.exchange/">here</a> and swap to Dai
+          <a class="underline" href="https://swap.cow.fi/">here</a>.
+          Only dealing with sDai and xDai assets and without exposure to any other protocol except Aave and Balancer (only for the flash loan).
+
+          The current APY is
+
+          <template v-if="isApyReady">
+            {{ apyHr }},
+          </template>
+          <template v-else>
+            (loading),
+          </template>
+
+          and the verified contract address is <a :href="'https://gnosisscan.io/address/' + ASDAI_CONTRACT_ADDRESS" class="underline">{{  ASDAI_CONTRACT_ADDRESS }}</a>.
+        </div>
       </div>
     </div>
     <div>
@@ -25,7 +42,7 @@
           class="mb-4"
           @click="setChain({ chainId: GNOSIS_CHAIN_ID })"
         >
-          Switch to Gnosis FIXME
+          Switch to Gnosis
         </button-error>
       </div>
     </centered-layout>
@@ -37,9 +54,10 @@ import { useOnboard } from '@web3-onboard/vue';
 import { useWallet } from '@/useWallet';
 import DepositWidget from '@/components/DepositWidget.vue';
 import CenteredLayout from '@/components/CenteredLayout.vue';
-import TheTitle from './TheTitle.vue';
 import ButtonError from './ButtonError.vue';
 import { computed } from 'vue';
+import { ASDAI_CONTRACT_ADDRESS } from '@/constants';
+import { apy, isApyReady, apyHr } from '@/apy';
 
 const GNOSIS_CHAIN_ID = 0x64;
 
