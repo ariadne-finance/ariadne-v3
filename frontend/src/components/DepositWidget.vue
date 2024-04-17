@@ -243,10 +243,19 @@ const asdaiBalanceAsWxdai = computed(() => {
     return null;
   }
 
-  const percent = toValue(asdaiBalance) * 10n ** 18n / toValue(settings).totalSupply;
-  const asdaiBalanceBase = toValue(settings).totalBalanceBase * percent / 10n ** 8n;
-  return asdaiBalanceBase * toValue(wxdaiPrice) / 10n ** 8n;
+  return convertAsdaiToWxdai(toValue(asdaiBalance));
 });
+
+function convertAsdaiToWxdai(amount) {
+  const percent = amount * 10n ** 18n / toValue(settings).totalSupply;
+  const amountBase1 = toValue(settings).totalBalanceBase * percent;
+  return amountBase1 * toValue(wxdaiPrice) / 10n ** 16n;
+}
+
+function convertWxdaiToAsdai(amount) {
+  const percent = amount * toValue(wxdaiPrice) * 10n**18n / toValue(settings).totalBalanceBase;
+  return percent * toValue(settings).totalSupply / 10n ** 18n / 10n ** 18n;
+}
 
 const asdaiBalanceAsWxdaiHr = computed(() => {
   if (asdaiBalanceAsWxdai.value === null) {
@@ -288,7 +297,8 @@ async function withdraw() {
     'Success!'
   ]);
 
-  const amountSnapped = snapTo100Percent(toValue(withdrawAmount), toValue(asdaiBalanceAsWxdai));
+  const amountInAsdai = convertWxdaiToAsdai(toValue(withdrawAmount));
+  const amountSnapped = snapTo100Percent(toValue(amountInAsdai), toValue(asdaiBalance));
 
   let tr;
 
