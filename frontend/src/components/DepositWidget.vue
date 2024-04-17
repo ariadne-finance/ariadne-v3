@@ -306,6 +306,7 @@ async function withdraw() {
 
     const decodedError = decodeError(toValue(asdaiContract), error);
     if (!decodedError) {
+      console.error(error);
       Modal.error("Error withdrawing.");
       return;
     }
@@ -323,8 +324,8 @@ async function withdraw() {
     WithdrawModal.close();
 
   } catch (error) {
-    console.error(error);
     WithdrawModal.close();
+    console.error(error);
     Modal.error("Error confirming withdrawal.");
   }
 
@@ -426,12 +427,12 @@ async function deposit() {
 
     const decodedError = decodeError(toValue(asdaiContract), error);
     if (!decodedError) {
+      console.error(error);
       Modal.error("Error depositing.");
       return;
     }
 
     console.error(error);
-
     Modal.error(DEPOSIT_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR[decodedError.name] || "(unknown error)");
 
     return;
