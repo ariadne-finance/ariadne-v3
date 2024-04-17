@@ -1,4 +1,5 @@
-import { ref, shallowRef } from 'vue';
+import { ref, shallowRef, computed, toValue } from 'vue';
+import { formatUnits } from '@/formatters';
 
 export const apy = ref({});
 export const isApyReady = shallowRef(false);
@@ -16,3 +17,13 @@ export async function loadApy() {
     apy.value[key] = value;
   }
 }
+
+export const apyHr = computed(() => {
+  if (!toValue(isApyReady)) {
+    return '-';
+  }
+
+  return formatUnits(apy.value.apy, 18, 2, 2) + '%';
+});
+
+loadApy();

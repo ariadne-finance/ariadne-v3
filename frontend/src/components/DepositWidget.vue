@@ -12,6 +12,11 @@
           <the-logo class="h-10" />
         </div>
 
+        <div class="mb-8"> <!-- FIXME design text block -->
+          This vault leverages sDai borrowing xDai on Aave. You are only exposed to sDai and xDai risks. Click the “i” link
+          next to the current APY to learn what it consists of. Please check out our Telegram group below if you have questions.
+        </div>
+
         <div class="border-2 border-primary-400 shadow-custom">
           <div class="bg-black/10 border-b-2 border-primary-400 flex items-center p-4 flex-col sm:flex-row sm:space-x-8">
             <div class="grow mb-2 sm:-my-4">
@@ -112,7 +117,7 @@ import { snapTo100Percent } from '@/snapTo100Percent';
 import CurrencyInputWithdraw from '@/components/CurrencyInputWithdraw.vue';
 import { useWallet } from '@/useWallet';
 import { useAsdai } from '@/useAsdai';
-import { apy, isApyReady, loadApy } from '@/apy';
+import { apy, isApyReady, apyHr, loadApy } from '@/apy';
 import { decodeError, DEPOSIT_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR, WITHDRAW_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR } from '@/asdaiErrors';
 import { Modal, DepositModal, WithdrawModal } from '@/useModal';
 import ModalApy from '@/components/ModalApy.vue';
@@ -120,16 +125,6 @@ import ModalApy from '@/components/ModalApy.vue';
 const isMetamaskBusy = shallowRef(false);
 
 const { address, provider, signer } = useWallet();
-
-loadApy();
-
-const apyHr = computed(() => {
-  if (!toValue(isApyReady)) {
-    return '-';
-  }
-
-  return formatUnits(apy.value.apy, 18, 2, 2) + '%';
-});
 
 const depositInput = ref(null);
 const depositAmount = shallowRef(null);
