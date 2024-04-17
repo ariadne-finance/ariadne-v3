@@ -1,8 +1,9 @@
 <template>
   <centered-layout v-if="!connectedWallet">
+    <!-- FIXME design add logo to this page in unconnected state -->
     <div class="pb-20 relative">
       <div class="max-w-max mx-auto text-left">
-        <div class="relative md:pr-4"> <!-- FIXME design text block; FIXME add logo to this page in unconnected state -->
+        <div class="relative md:pr-4"> <!-- FIXME design text block -->
           This onchain strategy leverages sDai on Gnosis blockchain — a high APY on your stables with minimum risk.
           You can bridge stables to Gnosis <a class="underline" href="https://www.bungee.exchange/">here</a> and swap to Dai
           <a class="underline" href="https://swap.cow.fi/">here</a>.
