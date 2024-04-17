@@ -1,5 +1,5 @@
 <template>
-  <footer class="m-1 border-2 border-[#203e29] bg-black/10">
+  <footer class="m-1 border-2 border-[#203e29] bg-black/10 pt-4">
     <div class="text-center my-2">
       <a target="_blank" href="https://twitter.com/Ariadne_finance" class="mx-1 btn btn-link text-primary-300">
         <svg width="22" height="17" viewBox="0 0 22 17" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -20,7 +20,7 @@
       </a>
     </div>
 
-    <div class="text-center my-2">
+    <div class="text-center my-2" v-if="false">
       <a class="mx-3 text-primary-300 hover:text-primary-200 transition-colors duration-300" target="_blank" href="https://ariadne.finance/">ABOUT</a>
       <a class="mx-3 text-primary-300 hover:text-primary-200 transition-colors duration-300" target="_blank" href="https://ariadne.helpsite.com">FAQ &amp; SUPPORT</a>
       <a class="mx-3 text-primary-300 hover:text-primary-200 transition-colors duration-300" target="_blank" href="https://ariadne-finance.gitbook.io">DOCS</a>
@@ -30,7 +30,7 @@
       <div class="grow" />
       <div class="shrink-0 inverted mx-2 text-lg">
         © 2021-{{ year }} ARIADNE
-        <span class="mx-1 mt-[3px] opacity-80">🇺🇦</span>
+        <span class="mx-1 mt-[3px] opacity-70">🇺🇦</span>
       </div>
       <div class="grow" />
     </div>
