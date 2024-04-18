@@ -2,112 +2,108 @@
   <loading-spinner v-if="!isReady" class="text-primary-500"> Loading... </loading-spinner>
 
   <centered-layout v-else>
-    <div class="absolute top-4 left-4 hidden sm:block">
-      <the-logo class="h-10" />
+    <div class="my-10 lg:mt-0 mx-2">
+      <block-decorative class="max-w-[590px] lg:max-w-[1181px]">
+        This vault leverages sDai borrowing xDai on Aave. You are only exposed to sDai and xDai risks.
+        <span class="link-dashed" @click="showApyModal">Click the “i” link</span>
+        next to the current APY to learn what it consists of. Please check out our Telegram group below if you have questions.
+      </block-decorative>
     </div>
 
-    <div class="flex justify-center items-center text-left">
-      <div class="py-10 mt-12">
-        <div class="text-center sm:hidden mb-4">
-          <the-logo class="h-10" />
+    <div class="border-2 border-primary-400 shadow-custom">
+      <div class="bg-black/10 border-b-2 border-primary-400 flex items-center p-4 flex-col sm:flex-row sm:justify-between sm:space-x-8">
+        <div class="mb-2 sm:-my-4">
+          <img src="/coins/dai-bg.png" class="size-8 inline-block rounded-full border-2 border-primary-400" alt="dai">
+          <img src="/coins/agave-bg.png" class="size-8 inline-block rounded-full border-2 border-primary-400 relative -left-2" alt="agave">
         </div>
 
-        <div class="mb-8"> <!-- FIXME design text block -->
-          This vault leverages sDai borrowing xDai on Aave. You are only exposed to sDai and xDai risks. Click the “i” link
-          next to the current APY to learn what it consists of. Please check out our Telegram group below if you have questions.
+        <div class="text-xl">
+          sDAI/WXDAI leveraged farm
         </div>
+        <div class="text-xl">
+          <span class="text-primary-400">APY:</span>
+          {{ apyHr }}
+          <button class="btn-link px-0 hover:text-primary-100" @click="showApyModal">[i]</button>
+        </div>
+      </div>
 
-        <div class="border-2 border-primary-400 shadow-custom">
-          <div class="bg-black/10 border-b-2 border-primary-400 flex items-center p-4 flex-col sm:flex-row sm:space-x-8">
-            <div class="grow mb-2 sm:-my-4">
-              <img src="/coins/dai-bg.png" class="size-8 inline-block rounded-full border-2 border-primary-400" alt="dai">
-              <img src="/coins/agave-bg.png" class="size-8 inline-block rounded-full border-2 border-primary-400 relative -left-2" alt="agave">
-            </div>
+      <div class="px-4 py-6 text-center">
+        <template v-if="asdaiBalanceAsWxdai > 0">
+          <span class="text-primary-400">Your balance:</span> {{ asdaiBalanceAsWxdaiHr }} WXDAI
+        </template>
+        <template v-else>
+          You have no power here
+        </template>
+      </div>
 
-            <div class="shrink-0 text-xl">
-              <span class="text-primary-400">My balance:</span> {{ asdaiBalanceAsWxdaiHr }} WXDAI
-            </div>
-            <div class="shrink-0 text-xl">
-              <span class="text-primary-400">APY:</span>
-              {{ apyHr }}
-              <button class="btn-link px-0 hover:text-primary-100" @click="showApyModal">[i]</button>
-            </div>
-          </div>
+      <div class="flex flex-col space-y-1 lg:flex-row lg:space-x-1 lg:space-y-0 m-1">
+        <form class="w-full max-w-[600px] border-2 border-primary-400 pb-4" @submit.prevent="deposit">
+          <div class="mt-4 text-center p-2 text-xl">DEPOSIT</div>
+          <div class="flex flex-col sm:flex-row items-start space-x-1 m-4">
+            <div class="grow">
+              <currency-input-withdraw
+                ref="depositInput"
+                v-model="depositAmount"
+                v-model:selectedWithdrawToken="selectedDepositToken"
+                :decimals="18"
+                :display-decimals="4"
+                :max="selectedDepositTokenBalanceOrNative"
+                :min="settings.minDepositAmount"
+                :disabled="isMetamaskBusy"
+                :tokens="depositTokenSymbolList"
+                placeholder=""
+              />
+              <div class="flex flex-col xs:flex-row justify-between">
+                <a class="font-semibold link-dashed text-primary-300" @click="depositMaxClicked">
+                  max {{ selectedDepositTokenBalanceOrNativeHr }} {{ selectedDepositToken }}
+                </a>
 
-          <div class="px-4 py-6 text-center">
-            You have no power here
-          </div>
-
-          <div class="flex flex-col space-y-1 lg:flex-row lg:space-x-1 lg:space-y-0 m-1">
-            <form class="w-full max-w-[600px] border-2 border-primary-400 pb-4" @submit.prevent="deposit">
-              <div class="mt-4 text-center p-2 text-xl">DEPOSIT</div>
-              <div class="flex flex-col sm:flex-row items-start space-x-1 m-4">
-                <div class="grow">
-                  <currency-input-withdraw
-                    ref="depositInput"
-                    v-model="depositAmount"
-                    v-model:selectedWithdrawToken="selectedDepositToken"
-                    :decimals="18"
-                    :display-decimals="4"
-                    :max="selectedDepositTokenBalanceOrNative"
-                    :min="settings.minDepositAmount"
-                    :disabled="isMetamaskBusy"
-                    :tokens="depositTokenSymbolList"
-                    placeholder=""
-                  />
-                  <div class="flex flex-col xs:flex-row justify-between">
-                    <a class="font-semibold link-dashed text-primary-300" @click="depositMaxClicked">
-                      max {{ selectedDepositTokenBalanceOrNativeHr }} {{ selectedDepositToken }}
-                    </a>
-
-                    <a class="font-semibold link-dashed text-primary-300" @click="depositMinClicked">
-                      min {{ formatUnits(settings.minDepositAmount, 18, 4, 4) }} {{ selectedDepositToken }}
-                    </a>
-                  </div>
-                </div>
-
-                <div class="shrink-0 w-full sm:w-auto text-center mt-6 sm:mt-0">
-                  <button-submit :disabled="!isDepositButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Deposit</button-submit>
-                </div>
+                <a class="font-semibold link-dashed text-primary-300" @click="depositMinClicked">
+                  min {{ formatUnits(settings.minDepositAmount, 18, 4, 4) }} {{ selectedDepositToken }}
+                </a>
               </div>
-            </form>
+            </div>
 
-            <form class="w-full max-w-[600px] border-2 border-primary-400 pb-4" @submit.prevent="withdraw">
-              <div class="mt-4 text-center p-2 text-xl">WITHDRAW</div>
-              <div class="flex flex-col sm:flex-row items-start space-x-1 m-4">
-                <div class="grow">
-                  <currency-input-withdraw
-                    ref="withdrawInput"
-                    v-model="withdrawAmount"
-                    v-model:selectedWithdrawToken="selectedWithdrawToken"
-                    :decimals="18"
-                    :display-decimals="4"
-                    :max="asdaiBalanceAsWxdai"
-                    :disabled="isMetamaskBusy"
-                    :tokens="['WXDAI']"
-                    placeholder=""
-                  />
-
-                  <a class="font-semibold link-dashed text-primary-300" @click="withdrawMaxClicked">
-                    max {{ asdaiBalanceAsWxdaiHr }} WXDAI
-                  </a>
-                </div>
-
-                <div class="shrink-0 w-full sm:w-auto text-center mt-6 sm:mt-0">
-                  <button-submit :disabled="!isWithdrawButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Withdraw</button-submit>
-                </div>
-              </div>
-            </form>
+            <div class="shrink-0 w-full sm:w-auto text-center mt-6 sm:mt-0">
+              <button-submit :disabled="!isDepositButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Deposit</button-submit>
+            </div>
           </div>
-        </div>
+        </form>
+
+        <form class="w-full max-w-[600px] border-2 border-primary-400 pb-4" @submit.prevent="withdraw">
+          <div class="mt-4 text-center p-2 text-xl">WITHDRAW</div>
+          <div class="flex flex-col sm:flex-row items-start space-x-1 m-4">
+            <div class="grow">
+              <currency-input-withdraw
+                ref="withdrawInput"
+                v-model="withdrawAmount"
+                v-model:selectedWithdrawToken="selectedWithdrawToken"
+                :decimals="18"
+                :display-decimals="4"
+                :max="asdaiBalanceAsWxdai"
+                :disabled="isMetamaskBusy"
+                :tokens="['WXDAI']"
+                placeholder=""
+              />
+
+              <a class="font-semibold link-dashed text-primary-300" @click="withdrawMaxClicked">
+                max {{ asdaiBalanceAsWxdaiHr }} WXDAI
+              </a>
+            </div>
+
+            <div class="shrink-0 w-full sm:w-auto text-center mt-6 sm:mt-0">
+              <button-submit :disabled="!isWithdrawButtonEnabled || isMetamaskBusy" :busy="isMetamaskBusy">Withdraw</button-submit>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   </centered-layout>
 </template>
 
 <script setup>
-import TheLogo from './TheLogo.vue';
 import CenteredLayout from '@/components/CenteredLayout.vue';
+import BlockDecorative from './BlockDecorative.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
 import ButtonSubmit from '@/components/ButtonSubmit.vue';
 import { shallowRef, computed, toValue, watch, ref } from 'vue';
@@ -117,7 +113,7 @@ import { snapTo100Percent } from '@/snapTo100Percent';
 import CurrencyInputWithdraw from '@/components/CurrencyInputWithdraw.vue';
 import { useWallet } from '@/useWallet';
 import { useAsdai } from '@/useAsdai';
-import { apy, isApyReady, apyHr, loadApy } from '@/apy';
+import { apy, apyHr, loadApy } from '@/apy';
 import { decodeError, DEPOSIT_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR, WITHDRAW_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR } from '@/asdaiErrors';
 import { Modal, DepositModal, WithdrawModal } from '@/useModal';
 import ModalApy from '@/components/ModalApy.vue';
@@ -248,7 +244,7 @@ function convertAsdaiToWxdai(amount) {
 }
 
 function convertWxdaiToAsdai(amount) {
-  const percent = amount * toValue(wxdaiPrice) * 10n**18n / toValue(settings).totalBalanceBase;
+  const percent = amount * toValue(wxdaiPrice) * 10n ** 18n / toValue(settings).totalBalanceBase;
   return percent * toValue(settings).totalSupply / 10n ** 18n / 10n ** 18n;
 }
 

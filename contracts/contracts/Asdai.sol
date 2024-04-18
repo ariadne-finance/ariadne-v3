@@ -5,6 +5,7 @@ import { ERC20Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC2
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { ERC1967Utils } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 
 import { IPool } from "@aave/core-v3/contracts/interfaces/IPool.sol";
 import { IAaveOracle } from "@aave/core-v3/contracts/interfaces/IAaveOracle.sol";
@@ -19,9 +20,9 @@ uint8 constant REBALANCE_ITERATIONS_MAX = 10;
 
 uint256 constant AAVE_INTEREST_RATE_MODE_VARIABLE = 2;
 
-uint8 constant FLASH_LOAN_MODE_DEPOSIT = 1;
+uint8 constant FLASH_LOAN_MODE_DEPOSIT  = 1;
 uint8 constant FLASH_LOAN_MODE_WITHDRAW = 2;
-uint8 constant FLASH_LOAN_MODE_CLOSE = 3;
+uint8 constant FLASH_LOAN_MODE_CLOSE    = 3;
 
 uint8 constant FLAGS_POSITION_CLOSED   = 1 << 0;
 uint8 constant FLAGS_DEPOSIT_PAUSED    = 1 << 1;
@@ -31,6 +32,10 @@ uint256 constant EXTRACT_LTV_FROM_POOL_CONFIGURATION_DATA_MASK = (1 << 16) - 1;
 
 uint256 constant MIN_ASDAI_AMOUNT_TO_WITHDRAW = 10 ** 6; // roughly one cent
 
+IBalancerVault constant BALANCER_VAULT = IBalancerVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
+IPoolAddressesProvider constant AAVE_ADDRESS_PROVIDER = IPoolAddressesProvider(0x36616cf17557639614c1cdDb356b1B83fc0B2132);
+ISavingsXDaiAdapter constant SAVINGS_X_DAI_ADAPTER = ISavingsXDaiAdapter(0xD499b51fcFc66bd31248ef4b28d656d67E591A94);
+
 error AsdaiOperationDisabledByFlags();
 error AsdaiOnlyFlashloanLender();
 error AsdaiUnknownFlashloanMode();
@@ -39,20 +44,16 @@ error AsdaiIncorrectDepositOrWithdrawalAmount();
 error AsdaiRebalanceNotNeccessary();
 error AsdaiNotEnoughToBorrow();
 
-IBalancerVault constant BALANCER_VAULT = IBalancerVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
-IPoolAddressesProvider constant AAVE_ADDRESS_PROVIDER = IPoolAddressesProvider(0x36616cf17557639614c1cdDb356b1B83fc0B2132);
-ISavingsXDaiAdapter constant SAVINGS_X_DAI_ADAPTER = ISavingsXDaiAdapter(0xD499b51fcFc66bd31248ef4b28d656d67E591A94);
-
-/// @title Ariadne sDAI duplicator
+/// @title Ariadne sDAI leveraged vault
 
 contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
-    /// @notice The minimum amount of wxDAI to deposit.
+    /// @notice The minimum amount of wxDAI to deposit
     uint256 public minDepositAmount;
 
-    /// @notice The maximum amount of wxDAI to deposit.
+    /// @notice The maximum amount of wxDAI to deposit
     uint256 public maxDepositAmount;
 
-    /// @notice Binary settings for the smart contract, as specified by the FLAGS_* constants.
+    /// @notice Binary settings for the smart contract, as specified by the FLAGS_* constants
     uint8 public flags;
 
     uint8 private eightBitGap1; // 8 bits left here
@@ -61,18 +62,19 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
 
     uint256[40] private __gap;
 
-    /// @notice Emitted after a position has been closed
+    /// @notice Emitted after a position has been fully closed and liquidated into wxDAI
     /// @param finalBalanceWxdai The final balance in wxDAI after closing the position
     event PositionClose(uint256 finalBalanceWxdai);
 
-    /// @notice This event is emitted when a withdrawal takes place
-    /// @param amount The Asdai withdrawal amount requested by user
-    /// @param amountWxdai The actual amnount of wxDAI that has been withdrawn from the position
+    /// @notice Emitted when a withdrawal takes place
+    /// @param amount The AsDAI withdrawal amount requested by user
+    /// @param amountWxdai The actual amnount of wxDAI that has been withdrawn to user
+    /// @param user User address
     event PositionWithdraw(uint256 amount, uint256 amountWxdai, address user);
 
-    /// @notice This event is emitted when a deposit takes place
-    /// @param amountWxdai The actual amnount of wxDAI that has been deposited into the position
-    /// @param amount The amount of Asdai minted
+    /// @notice Emitted when a deposit takes place
+    /// @param amountWxdai The actual amnount of wxDAI that has been deposited
+    /// @param amount The amount of AsDAI minted
     event PositionDeposit(uint256 amountWxdai, uint256 amount, address user);
 
     /// @notice Actual constructor of this upgradeable contract
@@ -80,7 +82,7 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         public
         initializer
     {
-        __ERC20_init("Ariadne sDAI duplicator", "AsDAI");
+        __ERC20_init("Ariadne sDAI/WXDAI farming vault", "AsDAI");
         __Ownable_init(msg.sender);
 
         wxdai().approve(address(pool()), 2 ** 256 - 1);
@@ -95,6 +97,12 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         override
         onlyOwner
     {}
+
+    /// @notice Retrieves the contract's current implementation address
+    /// @return The address of the active contract implementation
+    function implementation() public view returns (address) {
+        return ERC1967Utils.getImplementation();
+    }
 
     modifier whenFlagNotSet(uint8 whatExactly) {
         if ((flags & whatExactly) == whatExactly) {
@@ -158,7 +166,7 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     /// @notice Withdraw from vault
-    /// @param amount The amount of Asdai to withdraw
+    /// @param amount The amount of AsDAI to withdraw
     function withdraw(uint256 amount)
         public
         whenFlagNotSet(FLAGS_WITHDRAW_PAUSED)
@@ -168,11 +176,11 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         }
 
         if (flags & FLAGS_POSITION_CLOSED == FLAGS_POSITION_CLOSED) {
-            _withdrawClosed(amount);
+            _withdrawWhenPositionIsClosed(amount);
             return;
         }
 
-        _withdrawOpen(amount);
+        _withdrawWhilePositionIsOpen(amount);
     }
 
     /// @notice Returns the Total Value Locked (TVL) in the Vault
@@ -185,6 +193,7 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         return _totalBalanceBase();
     }
 
+    /// @notice Rebalance the vault after sDAI interest accrual
     function rebalance()
         public
     {
@@ -225,7 +234,7 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         }
     }
 
-    function _withdrawClosed(uint256 amount)
+    function _withdrawWhenPositionIsClosed(uint256 amount)
         internal
     {
         uint256 percent = Math.mulDiv(amount, 10e18, totalSupply());
@@ -239,7 +248,7 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         emit PositionWithdraw(amount, wxdaiReturnAmount, msg.sender);
     }
 
-    function _withdrawOpen(uint256 amount)
+    function _withdrawWhilePositionIsOpen(uint256 amount)
         internal
     {
         uint256 wxdaiPrice = getWxdaiPrice();
@@ -354,15 +363,15 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         }
     }
 
-    /// @notice Allows the contract owner to recover misplaced tokens.
+    /// @notice Recover misplaced tokens.
     /// The function can only be invoked by the contract owner.
-    /// @param token An address of token contractfrom which tokens will be collected.
-    /// @param to The recipient address where all retrieved tokens will be transferred.
+    /// @param token An address of token contractfrom which tokens will be collected
+    /// @param to The recipient address where all retrieved tokens will be transferred
     function rescue(address token, address to)
         public
         onlyOwner
     {
-        // note: no zero-balance assertions or protections, we assume the owner knows what is he doing
+        // note: no zero-balance assertions or protections, we assume the owner knows what are they doing
         if (token == address(0)) {
             payable(to).transfer(address(this).balance);
             return;
@@ -372,11 +381,7 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     /// @notice Update contract's settings. Method is only available to owner.
-    function setSettings(
-        uint256 _minDepositAmount,
-        uint256 _maxDepositAmount,
-        uint8 _flags
-    )
+    function setSettings(uint256 _minDepositAmount, uint256 _maxDepositAmount, uint8 _flags)
         public
         onlyOwner
     {
@@ -385,7 +390,8 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         flags = _flags;
     }
 
-    /// @notice Closes the entire position, repaying all debt, withdrawing all collateral from Aave and deactivating the contract.
+    /// @notice Closes the entire position, repaying all debt, withdrawing all collateral from Aave and deactivating the contract's deposits.
+    /// The position is liquidated into WXDAI which is available for users to withdraw.
     /// Only accessible by the contract owner when the position hasn't been already closed.
     function closePosition()
         public
@@ -473,6 +479,8 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         return Math.mulDiv(amount, 10 ** 18, sdaiPrice);
     }
 
+    // Not used. Left for posterity.
+    //
     // function convertSdaiToBase(uint256 amount, uint256 sdaiPrice)
     //     internal
     //     pure
@@ -489,6 +497,8 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         return Math.mulDiv(amount, 10 ** 18, wxdaiPrice);
     }
 
+    // Not used. Left for posterity.
+    //
     // function convertWxdaiToBase(uint256 amount, uint256 wxdaiPrice)
     //     internal
     //     pure

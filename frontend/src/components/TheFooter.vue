@@ -20,7 +20,7 @@
       </a>
     </div>
 
-    <div class="text-center my-2" v-if="false">
+    <div v-if="false" class="text-center my-2">
       <a class="mx-3 text-primary-300 hover:text-primary-200 transition-colors duration-300" target="_blank" href="https://ariadne.finance/">ABOUT</a>
       <a class="mx-3 text-primary-300 hover:text-primary-200 transition-colors duration-300" target="_blank" href="https://ariadne.helpsite.com">FAQ &amp; SUPPORT</a>
       <a class="mx-3 text-primary-300 hover:text-primary-200 transition-colors duration-300" target="_blank" href="https://ariadne-finance.gitbook.io">DOCS</a>

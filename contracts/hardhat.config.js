@@ -9,6 +9,18 @@ const accounts = vars.has('PRIVATE_KEY') ? [ vars.get('PRIVATE_KEY') ] : undefin
 
 module.exports = {
   networks: {
+    // This is required for gnosis fork. Numberes are imaginary.
+    hardhat: {
+      chains: {
+        0x64: {
+          hardforkHistory: {
+            berlin: 10000000,
+            london: 20000000,
+          }
+        }
+      }
+    },
+
     forked: {
       url: 'http://127.0.0.1:8545',
       accounts
