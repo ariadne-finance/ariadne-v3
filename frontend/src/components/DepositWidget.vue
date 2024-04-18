@@ -127,7 +127,7 @@ import { snapTo100Percent } from '@/snapTo100Percent';
 import CurrencyInputWithdraw from '@/components/CurrencyInputWithdraw.vue';
 import { useWallet } from '@/useWallet';
 import { useAsdai } from '@/useAsdai';
-import { apy, apyHr, loadApy } from '@/apy';
+import { apy, apyHr, loadApy, isApyReady } from '@/apy';
 import { decodeError, DEPOSIT_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR, WITHDRAW_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR } from '@/asdaiErrors';
 import { Modal, DepositModal, WithdrawModal } from '@/useModal';
 import ModalApy from '@/components/ModalApy.vue';
