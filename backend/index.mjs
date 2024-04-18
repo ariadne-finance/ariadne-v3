@@ -18,7 +18,7 @@ function readAbi(name) {
 
 const provider = new ethers.JsonRpcProvider(process.env.RPC);
 
-const WXDAI_CONTRACT_ADDRESS = '0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d';
+let wxdaiAddress = null;
 const SAVINGS_X_DAI_ADAPTER_ADDRESS = '0xD499b51fcFc66bd31248ef4b28d656d67E591A94';
 const AAVE_IPOOL_ADDRESSES_PROVIDER_ADDRESS = '0x36616cf17557639614c1cdDb356b1B83fc0B2132';
 const ASDAI_CONTRACT_ADDRESS = '0xDE9D935D7ad652b2c6F4CF3e9F615a905530F25B';
@@ -40,7 +40,7 @@ async function loadVariableBorrowRate() {
 
   const r = await request('https://api.thegraph.com/subgraphs/name/aave/protocol-v3-gnosis', document);
 
-  const _wxdaiContractAddress = WXDAI_CONTRACT_ADDRESS.toLowerCase();
+  const _wxdaiContractAddress = wxdaiAddress.toLowerCase();
   const wxdaiAaveReserve = r.reserves.find(reserve => reserve.underlyingAsset === _wxdaiContractAddress);
   return wxdaiAaveReserve?.variableBorrowRate;
 }
@@ -48,6 +48,7 @@ async function loadVariableBorrowRate() {
 async function possiblyLoadContracts() {
   if (!savingsXDaiAdapterContract) {
     savingsXDaiAdapterContract = new ethers.Contract(SAVINGS_X_DAI_ADAPTER_ADDRESS, readAbi('ISavingsXDaiAdapter'), provider);
+    wxdaiAddress = await savingsXDaiAdapterContract.wxdai();
   }
 
   if (!aavePoolContract) {
