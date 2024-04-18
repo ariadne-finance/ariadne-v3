@@ -10,16 +10,16 @@
     </div>
 
     <div class="border-2 border-primary-400 shadow-custom">
-      <div class="bg-black/10 border-b-2 border-primary-400 flex items-center p-4 flex-col sm:flex-row sm:space-x-8">
-        <div class="grow mb-2 sm:-my-4">
+      <div class="bg-black/10 border-b-2 border-primary-400 flex items-center p-4 flex-col sm:flex-row sm:justify-between sm:space-x-8">
+        <div class="mb-2 sm:-my-4">
           <img src="/coins/dai-bg.png" class="size-8 inline-block rounded-full border-2 border-primary-400" alt="dai">
           <img src="/coins/agave-bg.png" class="size-8 inline-block rounded-full border-2 border-primary-400 relative -left-2" alt="agave">
         </div>
 
-        <div class="shrink-0 text-xl">
-          <span class="text-primary-400">My balance:</span> {{ asdaiBalanceAsWxdaiHr }} WXDAI
+        <div class="text-xl">
+          sDAI/WXDAI leveraged farm
         </div>
-        <div class="shrink-0 text-xl">
+        <div class="text-xl">
           <span class="text-primary-400">APY:</span>
           {{ apyHr }}
           <button class="btn-link px-0 hover:text-primary-100" @click="showApyModal">[i]</button>
@@ -27,7 +27,12 @@
       </div>
 
       <div class="px-4 py-6 text-center">
-        You have no power here
+        <template v-if="asdaiBalanceAsWxdai > 0">
+          <span class="text-primary-400">Your balance:</span> {{ asdaiBalanceAsWxdaiHr }} WXDAI
+        </template>
+        <template v-else>
+          You have no power here
+        </template>
       </div>
 
       <div class="flex flex-col space-y-1 lg:flex-row lg:space-x-1 lg:space-y-0 m-1">
