@@ -21,7 +21,7 @@ const provider = new ethers.JsonRpcProvider(process.env.RPC);
 let wxdaiAddress = null;
 const SAVINGS_X_DAI_ADAPTER_ADDRESS = '0xD499b51fcFc66bd31248ef4b28d656d67E591A94';
 const AAVE_IPOOL_ADDRESSES_PROVIDER_ADDRESS = '0x36616cf17557639614c1cdDb356b1B83fc0B2132';
-const ASDAI_CONTRACT_ADDRESS = '0xDE9D935D7ad652b2c6F4CF3e9F615a905530F25B';
+const ASDAI_CONTRACT_ADDRESS = '0x48cF154a086bAB5492A8D150f4d87a74eCf90743';
 
 let savingsXDaiAdapterContract;
 let aavePoolContract;
