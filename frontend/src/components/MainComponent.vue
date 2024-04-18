@@ -57,7 +57,7 @@ import CenteredLayout from '@/components/CenteredLayout.vue';
 import ButtonError from './ButtonError.vue';
 import { computed } from 'vue';
 import { ASDAI_CONTRACT_ADDRESS } from '@/constants';
-import { apy, isApyReady, apyHr } from '@/apy';
+import { isApyReady, apyHr } from '@/apy';
 
 const GNOSIS_CHAIN_ID = 0x64;
 
