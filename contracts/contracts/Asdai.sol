@@ -1,3 +1,4 @@
+// SDPX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
 import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
@@ -82,7 +83,7 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         public
         initializer
     {
-        __ERC20_init("Ariadne sDAI/WXDAI farming vault", "AsDAI");
+        __ERC20_init("Ariadne sDAI/WXDAI vault", "AsDAI");
         __Ownable_init(msg.sender);
 
         wxdai().approve(address(pool()), 2 ** 256 - 1);

@@ -108,3 +108,4 @@ contracts/cache
 contracts/artifacts
 contracts/deployments
 contracts/fork-*
+*.sh
