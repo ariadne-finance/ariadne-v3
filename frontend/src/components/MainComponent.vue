@@ -5,7 +5,7 @@
       <div class="max-w-max mx-auto text-left">
         <div class="relative md:pr-4"> <!-- FIXME design text block -->
           This onchain strategy leverages sDai on Gnosis blockchain — a high APY on your stables with minimum risk.
-          You can bridge stables to Gnosis <a class="underline" href="https://www.bungee.exchange/">here</a> and swap to Dai
+          You can bridge stables to Gnosis <a class="underline" href="https://jumper.exchange/">here</a> and swap to Dai
           <a class="underline" href="https://swap.cow.fi/">here</a>.
           Only dealing with sDai and xDai assets and without exposure to any other protocol except Aave and Balancer (only for the flash loan).
 
