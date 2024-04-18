@@ -1,6 +1,6 @@
 <template>
-  <div class="fixed z-10 top-2.5 right-1/2 translate-x-1/2 md:right-5 md:translate-x-0">
-    <button-outline v-if="!connectedWallet" class="min-w-60" shadow @click="onClickConnect">
+  <div class="fixed z-10 top-2.5 right-1/2 translate-x-1/2 sm:right-5 sm:translate-x-0">
+    <button-outline v-if="!connectedWallet" class="min-w-64" shadow @click="onClickConnect">
       {{ connectingWallet ? 'Connecting...' : connectedWallet ? 'Disconnect' : 'Connect Wallet' }}
     </button-outline>
   </div>
