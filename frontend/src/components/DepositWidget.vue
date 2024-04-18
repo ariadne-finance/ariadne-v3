@@ -238,12 +238,20 @@ const asdaiBalanceAsWxdai = computed(() => {
 });
 
 function convertAsdaiToWxdai(amount) {
+  if (!toValue(settings).totalSupply) {
+    return 0n;
+  }
+
   const percent = amount * 10n ** 18n / toValue(settings).totalSupply;
   const amountBase1 = toValue(settings).totalBalanceBase * percent;
   return amountBase1 * toValue(wxdaiPrice) / 10n ** 16n;
 }
 
 function convertWxdaiToAsdai(amount) {
+  if (!toValue(settings).totalBalanceBase) {
+    return 0n;
+  }
+
   const percent = amount * toValue(wxdaiPrice) * 10n ** 18n / toValue(settings).totalBalanceBase;
   return percent * toValue(settings).totalSupply / 10n ** 18n / 10n ** 18n;
 }
