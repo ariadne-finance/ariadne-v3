@@ -28,10 +28,11 @@
               <img src="/coins/agave-bg.png" class="size-8 inline-block rounded-full border-2 border-primary-400 relative -left-2" alt="agave">
             </div>
 
-            <div class="shrink-0 text-xl">
-              <span class="text-primary-400">My balance:</span> {{ asdaiBalanceAsWxdaiHr }} WXDAI
+            <div class="text-xl">
+              sDAI/WXDAI leveraged farm
             </div>
-            <div class="shrink-0 text-xl">
+
+            <div v-if="isApyReady" class="shrink-0 text-xl">
               <span class="text-primary-400">APY:</span>
               {{ apyHr }}
               <button class="btn-link px-0 hover:text-primary-100" @click="showApyModal">[i]</button>
@@ -39,7 +40,12 @@
           </div>
 
           <div class="px-4 py-6 text-center">
-            You have no power here
+            <template v-if="asdaiBalanceAsWxdai > 0">
+              <span class="text-primary-400">Your balance:</span> {{ asdaiBalanceAsWxdaiHr }} WXDAI
+            </template>
+            <template v-else>
+              You have no power here
+            </template>
           </div>
 
           <div class="flex flex-col space-y-1 lg:flex-row lg:space-x-1 lg:space-y-0 m-1">
