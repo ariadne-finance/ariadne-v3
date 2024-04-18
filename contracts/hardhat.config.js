@@ -26,7 +26,7 @@ module.exports = {
       accounts
     },
 
-    gnosis: {
+    xdai: {
       url: `https://rpc.gnosis.gateway.fm`,
       accounts
     }
@@ -34,7 +34,7 @@ module.exports = {
 
   etherscan: {
     apiKey: {
-      gnosis: vars.get('ETHERSCAN_GNOSIS', null)
+      xdai: vars.get('ETHERSCAN_GNOSIS', null)
     }
   },
 
