@@ -3,8 +3,8 @@
     <div class="my-10 sm:mt-0 sm:mb-20 mx-2">
       <block-decorative class="sm:max-w-[800px]">
         This onchain strategy leverages sDai on Gnosis blockchain — a high APY on your stables with minimum risk.
-        You can bridge stables to Gnosis <a class="underline" href="https://jumper.exchange/">here</a> and swap to Dai
-        <a class="underline" href="https://swap.cow.fi/">here</a>.
+        You can bridge stables to Gnosis <a class="link-dashed" href="https://jumper.exchange/">here</a> and swap to Dai
+        <a class="link-dashed" href="https://swap.cow.fi/">here</a>.
         Only dealing with sDai and xDai assets and without exposure to any other protocol except Aave and Balancer (only for the flash loan).
 
         The current APY is
@@ -16,7 +16,7 @@
           (loading),
         </template>
 
-        and the verified contract address is <a :href="'https://gnosisscan.io/address/' + ASDAI_CONTRACT_ADDRESS" class="block max-w-[calc(100vw-108px)] xs:inline truncate underline">{{ ASDAI_CONTRACT_ADDRESS }}</a>
+        and the verified contract address is <a :href="'https://gnosisscan.io/address/' + ASDAI_CONTRACT_ADDRESS" class="block max-w-[calc(100vw-108px)] xs:inline truncate link-dashed">{{ ASDAI_CONTRACT_ADDRESS }}</a>
       </block-decorative>
     </div>
     <div class="text-center">

@@ -4,7 +4,8 @@
   <centered-layout v-else>
     <div class="my-10 lg:mt-0 mx-2">
       <block-decorative class="max-w-[590px] lg:max-w-[1181px]">
-        This vault leverages sDai borrowing xDai on Aave. You are only exposed to sDai and xDai risks. Click the “i” link
+        This vault leverages sDai borrowing xDai on Aave. You are only exposed to sDai and xDai risks.
+        <span class="link-dashed" @click="showApyModal">Click the “i” link</span>
         next to the current APY to learn what it consists of. Please check out our Telegram group below if you have questions.
       </block-decorative>
     </div>
