@@ -2,21 +2,29 @@
   <centered-layout v-if="!connectedWallet">
     <div class="my-10 sm:mt-0 sm:mb-20 mx-2">
       <block-decorative class="sm:max-w-[800px]">
-        This onchain strategy leverages sDai on Gnosis blockchain — a high APY on your stables with minimum risk.
-        You can bridge stables to Gnosis <a class="link-dashed" href="https://jumper.exchange/">here</a> and swap to Dai
-        <a class="link-dashed" href="https://swap.cow.fi/">here</a>.
-        Only dealing with sDai and xDai assets and without exposure to any other protocol except Aave and Balancer (only for the flash loan).
+        <p class="mb-4">
+          This on-chain strategy utilizes sDAI on the Gnosis blockchain — a high APY on your stables with minimal risk.
+        </p>
 
-        The current APY is
+        <p class="mb-4">
+          You can bridge stables to Gnosis <a class="link-dashed" href="https://jumper.exchange/">here</a> and swap to
+          <a class="link-dashed" href="https://swap.cow.fi/">here</a>.
+        </p>
 
-        <template v-if="isApyReady">
-          {{ apyHr }},
-        </template>
-        <template v-else>
-          (loading),
-        </template>
+        <p>
+          Only sDAI and xDai assets are traded, with no exposure to other protocols except Aave and
+          Balancer (for flash loans only). The current APY is
 
-        and the verified contract address is <a :href="'https://gnosisscan.io/address/' + ASDAI_CONTRACT_ADDRESS" class="block max-w-[calc(100vw-108px)] xs:inline truncate link-dashed">{{ ASDAI_CONTRACT_ADDRESS }}</a>
+          <template v-if="isApyReady">
+            {{ apyHr }}
+          </template>
+          <template v-else>
+            (loading)
+          </template>
+
+          and the verified contract address is:
+          <a :href="'https://gnosisscan.io/address/' + ASDAI_CONTRACT_ADDRESS" class="block max-w-[calc(100vw-108px)] xs:inline truncate link-dashed">{{ ASDAI_CONTRACT_ADDRESS }}</a>
+        </p>
       </block-decorative>
     </div>
     <div class="text-center">
