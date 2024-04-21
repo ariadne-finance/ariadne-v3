@@ -3,9 +3,9 @@
     <div><span class="min-w-20 inline-block pr-2 text-right text-primary-100">{{ formatUnits(data.apy.agaveVaultApy, 18, 2, 2) }}%</span> Agave sDAI APY</div>
     <div><span class="min-w-20 inline-block pr-2 text-right text-primary-100">{{ formatUnits(data.apy.collateralLeverage, 5, 2, 2) }}&times;</span> Collateral leverage</div>
     <div><span class="min-w-20 inline-block pr-2 text-right text-primary-100">{{ formatUnits(data.apy.leveragedAgaveVaultApy, 18, 2, 2) }}%</span> Leveraged Agave sDAI APY</div>
-    <div><span class="min-w-20 inline-block pr-2 text-right text-primary-100">{{ formatUnits(data.apy.aaveVariableBorrowRate, 18, 2, 2) }}%</span> Aave WXDAI borrow rate</div>
+    <div><span class="min-w-20 inline-block pr-2 text-right text-primary-100">{{ formatUnits(data.apy.aaveVariableBorrowRate, 18, 2, 2) }}%</span> Aave wxDai borrow rate</div>
     <div><span class="min-w-20 inline-block pr-2 text-right text-primary-100">{{ formatUnits(data.apy.debtLeverage, 5, 2, 2) }}&times;</span> Debt leverage</div>
-    <div><span class="min-w-20 inline-block pr-2 text-right text-primary-100">{{ formatUnits(data.apy.leveragedWxdaiBorrowRate, 18, 2, 2) }}%</span> Leveraged Aave WXDAI borrow rate</div>
+    <div><span class="min-w-20 inline-block pr-2 text-right text-primary-100">{{ formatUnits(data.apy.leveragedWxdaiBorrowRate, 18, 2, 2) }}%</span> Leveraged Aave wxDai borrow rate</div>
   </div>
 </template>
 

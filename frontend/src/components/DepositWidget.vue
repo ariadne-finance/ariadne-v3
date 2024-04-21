@@ -18,7 +18,7 @@
         </div>
 
         <div class="text-xl">
-          sDAI/WXDAI leveraged farm
+          sDAI/wxDai leveraged farm
         </div>
         <div class="text-xl">
           <span class="text-primary-400">APY:</span>
@@ -29,7 +29,7 @@
 
       <div class="px-4 py-6 text-center">
         <template v-if="asdaiBalanceAsWxdai > 0">
-          <span class="text-primary-400">Your balance:</span> {{ asdaiBalanceAsWxdaiHr }} WXDAI
+          <span class="text-primary-400">Your balance:</span> {{ asdaiBalanceAsWxdaiHr }} wxDai
         </template>
         <template v-else>
           You have no power here
@@ -82,12 +82,12 @@
                 :display-decimals="4"
                 :max="asdaiBalanceAsWxdai"
                 :disabled="isMetamaskBusy"
-                :tokens="['WXDAI']"
+                :tokens="['wxDai']"
                 placeholder=""
               />
 
               <a class="font-semibold link-dashed text-primary-300" @click="withdrawMaxClicked">
-                max {{ asdaiBalanceAsWxdaiHr }} WXDAI
+                max {{ asdaiBalanceAsWxdaiHr }} wxDai
               </a>
             </div>
 
@@ -128,8 +128,8 @@ const depositAmount = shallowRef(null);
 const withdrawInput = ref(null);
 const withdrawAmount = shallowRef(null);
 
-const selectedDepositToken = shallowRef('WXDAI');
-const selectedWithdrawToken = shallowRef('WXDAI');
+const selectedDepositToken = shallowRef('wxDai');
+const selectedWithdrawToken = shallowRef('wxDai');
 
 const {
   isReady: isAsdaiReady,
@@ -181,7 +181,7 @@ const isReady = computed(
     && toValue(isAsdaiBalanceReady)
 );
 
-const depositTokenSymbolList = [ 'XDAI', 'WXDAI' ];
+const depositTokenSymbolList = [ 'xDai', 'wxDai' ];
 
 const isDepositButtonEnabled = computed(() => {
   if (toValue(depositAmount) < toValue(settings).minDepositAmount) {
@@ -353,7 +353,7 @@ async function withdraw() {
 
   Modal.alert({
     title: "Success!",
-    body: `Withdrawn ${formatUnits(event.args?.amountWxdai, 18, 4, 4)} WXDAI`
+    body: `Withdrawn ${formatUnits(event.args?.amountWxdai, 18, 4, 4)} wxDai`
   });
 }
 
@@ -371,7 +371,7 @@ async function deposit() {
     : snapTo100Percent(toValue(depositAmount), toValue(selectedDepositTokenBalanceOrNative));
 
   if (toValue(isDepositTokenNativeCurrency)) {
-    steps.unshift('Wrapping XDAI...');
+    steps.unshift('Wrapping xDai...');
     DepositModal.open(steps);
 
     try {
@@ -388,7 +388,7 @@ async function deposit() {
       }
 
       console.error(error);
-      Modal.error("Error wrapping XDAI into WXDAI!");
+      Modal.error("Error wrapping xDai into wxDai!");
       return;
     }
 
@@ -474,7 +474,7 @@ async function deposit() {
 
   Modal.alert({
     title: "Success!",
-    body: `Deposited ${formatUnits(event.args?.amountWxdai, 18, 4, 4)} WXDAI`
+    body: `Deposited ${formatUnits(event.args?.amountWxdai, 18, 4, 4)} wxDai`
   });
 }
 
