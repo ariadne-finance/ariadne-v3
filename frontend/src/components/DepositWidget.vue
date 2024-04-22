@@ -104,6 +104,7 @@
 
 <script setup>
 /* eslint-disable no-await-in-loop, no-promise-executor-return */
+/* global Sentry */
 
 import CenteredLayout from '@/components/CenteredLayout.vue';
 import BlockDecorative from './BlockDecorative.vue';
@@ -117,7 +118,7 @@ import CurrencyInputWithdraw from '@/components/CurrencyInputWithdraw.vue';
 import { useWallet } from '@/useWallet';
 import { useAsdai } from '@/useAsdai';
 import { apy, apyHr, loadApy } from '@/apy';
-import { decodeError, DEPOSIT_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR, WITHDRAW_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR, isMetamaskRejected } from '@/asdaiErrors';
+import { decodeError, ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR, isMetamaskRejected } from '@/asdaiErrors';
 import { Modal, DepositModal, WithdrawModal } from '@/useModal';
 import ModalApy from '@/components/ModalApy.vue';
 
@@ -291,7 +292,7 @@ async function refetch() {
   }
 }
 
-async function estimateGas(callback, onError) {
+async function estimateGas(operation, callback, onError) {
   let c = 0;
   let gasLimit = null;
 
@@ -304,8 +305,17 @@ async function estimateGas(callback, onError) {
       console.error(error);
 
       if (++c >= 3) {
+        Sentry.captureException(error, {
+          tags: {
+            operation,
+            estimateGas: true
+          }
+        });
+
         closeModalAndMetamaskIsFree();
+
         onError(error);
+
         return null;
       }
 
@@ -316,6 +326,26 @@ async function estimateGas(callback, onError) {
   console.log("Estimated gas", '0x' + gasLimit.toString(16));
 
   return gasLimit * 130n / 100n;
+}
+
+function possiblyDecodeAndReportError(operation, step, error) {
+  const decodedError = decodeError(toValue(asdaiContract), error);
+  if (!decodeError) {
+    return false;
+  }
+
+  const message = ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR[decodedError.name] || "unknown error";
+
+  Sentry.captureMessage(message, {
+    tags: {
+      operation,
+      step
+    }
+  });
+
+  Modal.error('(' + message + ')');
+
+  return true;
 }
 
 async function withdrawClicked() {
@@ -340,18 +370,23 @@ async function withdrawClicked() {
       break; // once we have estimation
 
     } catch (error) {
-      const decodedError = decodeError(toValue(asdaiContract), error);
-      // if this is Asdai contract error then it's definitely valid, return immediately
-      if (decodedError) {
+      if (possiblyDecodeAndReportError('withdraw', 'estimateGas', error)) {
         closeModalAndMetamaskIsFree();
-        Modal.error(WITHDRAW_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR[decodedError.name] || "(unknown error)");
         return;
       }
 
       console.error(error);
 
       if (++c >= 3) {
+        Sentry.captureException(error, {
+          tags: {
+            operation: 'withdraw',
+            step: 'estimateGas'
+          }
+        });
+
         closeModalAndMetamaskIsFree();
+
         // FIXME detailed error
         Modal.error("Error estimating gas for withdrawal, try again later." + error.message);
         return;
@@ -373,14 +408,20 @@ async function withdrawClicked() {
       return;
     }
 
+    if (possiblyDecodeAndReportError('withdraw', 'tx', error)) {
+      return;
+    }
+
     console.error(error);
 
-    const decodedError = decodeError(toValue(asdaiContract), error);
-    if (decodedError) {
-      Modal.error(WITHDRAW_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR[decodedError.name] || "(unknown error)");
-    } else {
-      Modal.error("Error withdrawing.");
-    }
+    Sentry.captureException(error, {
+      tags: {
+        operation: 'withdraw',
+        step: 'tx'
+      }
+    });
+
+    Modal.error("Error withdrawing.");
 
     return;
   }
@@ -392,7 +433,16 @@ async function withdrawClicked() {
 
   } catch (error) {
     console.error(error);
+
+    Sentry.captureException(error, {
+      tags: {
+        operation: 'withdraw',
+        step: 'wait'
+      }
+    });
+
     Modal.error("Error confirming withdrawal.");
+    // do not return
   }
 
   closeModalAndMetamaskIsFree();
@@ -409,7 +459,20 @@ async function withdrawClicked() {
   const event = transactionResponse.logs.find(a => a.eventName === 'PositionWithdraw');
 
   if (!event) {
-    Modal.error("Withdrawal event not found in transaction receipt");
+    const message = "Withdrawal event not found in transaction receipt";
+
+    Sentry.captureMessage(message, {
+      tags: {
+        operation: 'withdraw',
+        step: 'parse'
+      },
+      extra: {
+        transactionResponse
+      }
+    });
+
+    Modal.error(message);
+
     return;
   }
 
@@ -447,6 +510,7 @@ async function depositClicked() {
 
   if (toValue(isDepositTokenNativeCurrency)) {
     gasLimit = await estimateGas(
+      'wrap',
       () => toValue(wxdaiContract).connect(toValue(signer)).deposit.estimateGas({ value: toValue(amountSnapped) }),
       () => Modal.error("Error estimating gas for wrapping, try again later.")
     );
@@ -461,13 +525,21 @@ async function depositClicked() {
     } catch (error) {
       closeModalAndMetamaskIsFree();
 
-      if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
-        // user rejected
+      if (isMetamaskRejected(error)) {
         return;
       }
 
       console.error(error);
+
+      Sentry.captureException(error, {
+        tags: {
+          operation: 'wrap',
+          step: 'estimateGas'
+        }
+      });
+
       Modal.error("Error wrapping xDai into wxDai!");
+
       return;
     }
 
@@ -476,6 +548,7 @@ async function depositClicked() {
 
   if (allowance < amountSnapped) {
     gasLimit = await estimateGas(
+      'approve',
       () => toValue(wxdaiContract).connect(toValue(signer)).approve.estimateGas(toValue(asdaiContract).address, amountSnapped),
       () => Modal.error("Error estimating gas for approval, try again later.")
     );
@@ -490,13 +563,21 @@ async function depositClicked() {
     } catch (error) {
       closeModalAndMetamaskIsFree();
 
-      if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
-        // user rejected
+      if (isMetamaskRejected(error)) {
         return;
       }
 
       console.error(error);
+
+      Sentry.captureException(error, {
+        tags: {
+          operation: 'approve',
+          step: 'tx'
+        }
+      });
+
       Modal.error("Error approving wxDai.");
+
       return;
     }
 
@@ -517,20 +598,26 @@ async function depositClicked() {
       break; // once we have estimation
 
     } catch (error) {
-      const decodedError = decodeError(toValue(asdaiContract), error);
-      // if this is Asdai contract error then it's definitely valid, return immediately
-      if (decodedError) {
+      if (possiblyDecodeAndReportError('deposit', 'estimateGas', error)) {
         closeModalAndMetamaskIsFree();
-        Modal.error(DEPOSIT_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR[decodedError.name] || "(unknown error)");
         return;
       }
 
       console.error(error);
 
       if (++c >= 3) {
+        Sentry.captureException(error, {
+          tags: {
+            operation: 'deposit',
+            step: 'estimateGas'
+          }
+        });
+
         closeModalAndMetamaskIsFree();
+
         // FIXME detailed error
         Modal.error("Error estimating gas for deposit, try again later." + error.message);
+
         return;
       }
 
@@ -550,14 +637,13 @@ async function depositClicked() {
       return;
     }
 
+    if (possiblyDecodeAndReportError('deposit', 'tx', error)) {
+      return;
+    }
+
     console.error(error);
 
-    const decodedError = decodeError(toValue(asdaiContract), error);
-    if (decodedError) {
-      Modal.error(DEPOSIT_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR[decodedError.name] || "(unknown error)");
-    } else {
-      Modal.error("Error depositing.");
-    }
+    Modal.error("Error depositing.");
 
     return;
   }
@@ -569,6 +655,14 @@ async function depositClicked() {
 
   } catch (error) {
     console.error(error);
+
+    Sentry.captureException(error, {
+      tags: {
+        operation: 'deposit',
+        step: 'wait'
+      }
+    });
+
     Modal.error("Error confirming deposit.");
     // do not return
   }
@@ -587,7 +681,20 @@ async function depositClicked() {
   const event = transactionResponse.logs.find(a => a.eventName === 'PositionDeposit');
 
   if (!event) {
-    Modal.error("Deposit event not found in transaction receipt");
+    const message = "Deposit event not found in transaction receipt";
+
+    Sentry.captureMessage(message, {
+      tags: {
+        operation: 'deposit',
+        step: 'parse'
+      },
+      extra: {
+        transactionResponse
+      }
+    });
+
+    Modal.error(message);
+
     return;
   }
 
