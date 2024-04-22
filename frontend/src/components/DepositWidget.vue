@@ -120,6 +120,7 @@ import { useAsdai } from '@/useAsdai';
 import { apy, apyHr, loadApy } from '@/apy';
 import { decodeError, ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR, isMetamaskRejected } from '@/asdaiErrors';
 import { Modal, DepositModal, WithdrawModal } from '@/useModal';
+import ModalDetailedError from '@/components/ModalDetailedError.vue';
 import ModalApy from '@/components/ModalApy.vue';
 
 const isMetamaskBusy = shallowRef(false);
@@ -309,6 +310,9 @@ async function estimateGas(operation, callback, onError) {
           tags: {
             operation,
             estimateGas: true
+          },
+          extra: {
+            message: error.message
           }
         });
 
@@ -382,6 +386,9 @@ async function withdrawClicked() {
           tags: {
             operation: 'withdraw',
             step: 'estimateGas'
+          },
+          extra: {
+            message: error.message
           }
         });
 
@@ -418,6 +425,9 @@ async function withdrawClicked() {
       tags: {
         operation: 'withdraw',
         step: 'tx'
+      },
+      extra: {
+        message: error.message
       }
     });
 
@@ -438,6 +448,9 @@ async function withdrawClicked() {
       tags: {
         operation: 'withdraw',
         step: 'wait'
+      },
+      extra: {
+        message: error.message
       }
     });
 
@@ -459,7 +472,7 @@ async function withdrawClicked() {
   const event = transactionResponse.logs.find(a => a.eventName === 'PositionWithdraw');
 
   if (!event) {
-    const message = "Withdrawal event not found in transaction receipt";
+    const message = "Withdrawal event not found in transaction receipt. Please check your wallet.";
 
     Sentry.captureMessage(message, {
       tags: {
@@ -512,7 +525,11 @@ async function depositClicked() {
     gasLimit = await estimateGas(
       'wrap',
       () => toValue(wxdaiContract).connect(toValue(signer)).deposit.estimateGas({ value: toValue(amountSnapped) }),
-      () => Modal.error("Error estimating gas for wrapping, try again later.")
+      error => showDetailedErrorModal({
+        title: "Oops",
+        text: "Error estimating gas for wrapping. Try again later.",
+        detailsMessage: error.message
+      })
     );
 
     if (!gasLimit) {
@@ -535,10 +552,17 @@ async function depositClicked() {
         tags: {
           operation: 'wrap',
           step: 'estimateGas'
+        },
+        extra: {
+          message: error.message
         }
       });
 
-      Modal.error("Error wrapping xDai into wxDai!");
+      showDetailedErrorModal({
+        title: "Oops",
+        text: "Error wrapping xDai into wxDai. Try again later.",
+        detailsMessage: error.message
+      });
 
       return;
     }
@@ -550,7 +574,11 @@ async function depositClicked() {
     gasLimit = await estimateGas(
       'approve',
       () => toValue(wxdaiContract).connect(toValue(signer)).approve.estimateGas(toValue(asdaiContract).address, amountSnapped),
-      () => Modal.error("Error estimating gas for approval, try again later.")
+      error => showDetailedErrorModal({
+        title: "Oops",
+        text: "Error estimating gas for approval. Try again later.",
+        detailsMessage: error.message
+      })
     );
 
     if (!gasLimit) {
@@ -573,10 +601,17 @@ async function depositClicked() {
         tags: {
           operation: 'approve',
           step: 'tx'
+        },
+        extra: {
+          message: error.message
         }
       });
 
-      Modal.error("Error approving wxDai.");
+      showDetailedErrorModal({
+        title: "Oops",
+        text: "Error approving wxDai. Try again later.",
+        detailsMessage: error.message
+      });
 
       return;
     }
@@ -610,13 +645,19 @@ async function depositClicked() {
           tags: {
             operation: 'deposit',
             step: 'estimateGas'
+          },
+          extra: {
+            message: error.message
           }
         });
 
         closeModalAndMetamaskIsFree();
 
-        // FIXME detailed error
-        Modal.error("Error estimating gas for deposit, try again later." + error.message);
+        showDetailedErrorModal({
+          title: "Oops",
+          text: "Error estimating gas for deposit. Try again later.",
+          detailsMessage: error.message
+        });
 
         return;
       }
@@ -637,13 +678,27 @@ async function depositClicked() {
       return;
     }
 
-    if (possiblyDecodeAndReportError('deposit', 'tx', error)) {
-      return;
-    }
+    // if (possiblyDecodeAndReportError('deposit', 'tx', error)) {
+    //   return;
+    // }
 
     console.error(error);
 
-    Modal.error("Error depositing.");
+    Sentry.captureException(error, {
+      tags: {
+        operation: 'deposit',
+        step: 'tx'
+      },
+      extra: {
+        message: error.message
+      }
+    });
+
+    showDetailedErrorModal({
+      title: "Oops",
+      text: "Error depositing. Try again later.",
+      detailsMessage: error.message
+    });
 
     return;
   }
@@ -660,10 +715,17 @@ async function depositClicked() {
       tags: {
         operation: 'deposit',
         step: 'wait'
+      },
+      extra: {
+        message: error.message
       }
     });
 
-    Modal.error("Error confirming deposit.");
+    Modal.alert({
+      title: "Oops",
+      body: "Deposit transaction went through, but we were unable to confirm it. Please check your wallet."
+    });
+
     // do not return
   }
 
@@ -681,7 +743,7 @@ async function depositClicked() {
   const event = transactionResponse.logs.find(a => a.eventName === 'PositionDeposit');
 
   if (!event) {
-    const message = "Deposit event not found in transaction receipt";
+    const message = "Deposit event not found in transaction receipt. Please check your wallet.";
 
     Sentry.captureMessage(message, {
       tags: {
@@ -710,6 +772,18 @@ function showApyModal() {
     component: ModalApy,
     componentData: { apy: apy.value },
     okButton: 'Okay, thanks'
+  });
+}
+
+function showDetailedErrorModal({ title, text, detailsMessage }) {
+  Modal.dialog({
+    title,
+    component: ModalDetailedError,
+    componentData: {
+      text,
+      detailsMessage
+    },
+    cancelButton: false
   });
 }
 
