@@ -5,7 +5,7 @@ import rollupPolyfillNode from 'rollup-plugin-polyfill-node';
 import nodeStdlibBrowser from 'node-stdlib-browser';
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill';
 
-const target = [ 'es2023', 'chrome122', 'edge122', 'firefox122', 'safari16' ];
+const target = [ 'chrome122', 'edge122', 'firefox122', 'safari16' ];
 
 // https://vitejs.dev/config/
 export default defineConfig({

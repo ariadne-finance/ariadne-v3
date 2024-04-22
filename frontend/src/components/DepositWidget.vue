@@ -104,8 +104,7 @@
 
 <script setup>
 /* eslint-disable no-await-in-loop, no-promise-executor-return */
-/* global Sentry */
-
+import * as Sentry from '@sentry/vue';
 import CenteredLayout from '@/components/CenteredLayout.vue';
 import BlockDecorative from './BlockDecorative.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
@@ -334,7 +333,7 @@ async function estimateGas(operation, callback, onError) {
 
 function possiblyDecodeAndReportError(operation, step, error) {
   const decodedError = decodeError(toValue(asdaiContract), error);
-  if (!decodeError) {
+  if (!decodedError) {
     return false;
   }
 
