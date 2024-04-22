@@ -334,7 +334,7 @@ async function estimateGas(operation, callback, onError) {
 
 function possiblyDecodeAndReportError(operation, step, error) {
   const decodedError = decodeError(toValue(asdaiContract), error);
-  if (!decodeError) {
+  if (!decodedError) {
     return false;
   }
 
