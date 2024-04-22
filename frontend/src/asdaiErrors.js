@@ -33,3 +33,7 @@ export const WITHDRAW_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR = {
   AsdaiIncorrectDepositOrWithdrawalAmount: 'Incorrect withdrawal amount (too low or too high)',
   AsdaiOperationDisabledByFlags: "Withdrawal is currently disabled on contract"
 };
+
+export function isMetamaskRejected(error) {
+  return error.code === 4001 || error.code === 'ACTION_REJECTED';
+}

@@ -38,7 +38,7 @@
       </div>
 
       <div class="flex flex-col space-y-1 lg:flex-row lg:space-x-1 lg:space-y-0 m-1">
-        <form class="w-full max-w-[600px] border-2 border-primary-400 pb-4" @submit.prevent="deposit">
+        <form class="w-full max-w-[600px] border-2 border-primary-400 pb-4" @submit.prevent="depositClicked">
           <div class="mt-4 text-center p-2 text-xl">DEPOSIT</div>
           <div class="flex flex-col sm:flex-row items-start space-x-1 m-4">
             <div class="grow">
@@ -71,7 +71,7 @@
           </div>
         </form>
 
-        <form class="w-full max-w-[600px] border-2 border-primary-400 pb-4" @submit.prevent="withdraw">
+        <form class="w-full max-w-[600px] border-2 border-primary-400 pb-4" @submit.prevent="withdrawClicked">
           <div class="mt-4 text-center p-2 text-xl">WITHDRAW</div>
           <div class="flex flex-col sm:flex-row items-start space-x-1 m-4">
             <div class="grow">
@@ -103,6 +103,8 @@
 </template>
 
 <script setup>
+/* eslint-disable no-await-in-loop, no-promise-executor-return */
+
 import CenteredLayout from '@/components/CenteredLayout.vue';
 import BlockDecorative from './BlockDecorative.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
@@ -115,7 +117,7 @@ import CurrencyInputWithdraw from '@/components/CurrencyInputWithdraw.vue';
 import { useWallet } from '@/useWallet';
 import { useAsdai } from '@/useAsdai';
 import { apy, apyHr, loadApy } from '@/apy';
-import { decodeError, DEPOSIT_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR, WITHDRAW_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR } from '@/asdaiErrors';
+import { decodeError, DEPOSIT_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR, WITHDRAW_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR, isMetamaskRejected } from '@/asdaiErrors';
 import { Modal, DepositModal, WithdrawModal } from '@/useModal';
 import ModalApy from '@/components/ModalApy.vue';
 
@@ -289,7 +291,34 @@ async function refetch() {
   }
 }
 
-async function withdraw() {
+async function estimateGas(callback, onError) {
+  let c = 0;
+  let gasLimit = null;
+
+  do {
+    try {
+      gasLimit = await callback();
+      break; // once we have estimation
+
+    } catch (error) {
+      console.error(error);
+
+      if (++c >= 3) {
+        closeModalAndMetamaskIsFree();
+        onError(error);
+        return null;
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  } while (!gasLimit); // might as well be `true`
+
+  console.log("Estimated gas", '0x' + gasLimit.toString(16));
+
+  return gasLimit * 130n / 100n;
+}
+
+async function withdrawClicked() {
   isMetamaskBusy.value = true;
 
   WithdrawModal.open([
@@ -302,27 +331,56 @@ async function withdraw() {
 
   let tr;
 
+  let c = 0;
+  let gasLimit;
+
+  do {
+    try {
+      gasLimit = await toValue(asdaiContract).connect(toValue(signer)).withdraw.estimateGas(amountSnapped);
+      break; // once we have estimation
+
+    } catch (error) {
+      const decodedError = decodeError(toValue(asdaiContract), error);
+      // if this is Asdai contract error then it's definitely valid, return immediately
+      if (decodedError) {
+        closeModalAndMetamaskIsFree();
+        Modal.error(WITHDRAW_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR[decodedError.name] || "(unknown error)");
+        return;
+      }
+
+      console.error(error);
+
+      if (++c >= 3) {
+        closeModalAndMetamaskIsFree();
+        // FIXME detailed error
+        Modal.error("Error estimating gas for withdrawal, try again later." + error.message);
+        return;
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  } while (!gasLimit); // might as well be `true`
+
+  gasLimit = gasLimit * 130n / 100n;
+
   try {
-    tr = await toValue(asdaiContract).connect(toValue(signer)).withdraw(amountSnapped);
+    tr = await toValue(asdaiContract).connect(toValue(signer)).withdraw(amountSnapped, { gasLimit });
 
   } catch (error) {
-    WithdrawModal.close();
-    isMetamaskBusy.value = false;
+    closeModalAndMetamaskIsFree();
 
-    if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
-      // user rejected
-      return;
-    }
-
-    const decodedError = decodeError(toValue(asdaiContract), error);
-    if (!decodedError) {
-      console.error(error);
-      Modal.error("Error withdrawing.");
+    if (isMetamaskRejected(error)) {
       return;
     }
 
     console.error(error);
-    Modal.error(WITHDRAW_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR[decodedError.name] || "(unknown error)");
+
+    const decodedError = decodeError(toValue(asdaiContract), error);
+    if (decodedError) {
+      Modal.error(WITHDRAW_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR[decodedError.name] || "(unknown error)");
+    } else {
+      Modal.error("Error withdrawing.");
+    }
 
     return;
   }
@@ -331,19 +389,22 @@ async function withdraw() {
 
   try {
     transactionResponse = await tr.wait(4);
-    WithdrawModal.close();
 
   } catch (error) {
-    WithdrawModal.close();
     console.error(error);
     Modal.error("Error confirming withdrawal.");
   }
 
-  isMetamaskBusy.value = false;
+  closeModalAndMetamaskIsFree();
+
   withdrawInput.value.reset();
   withdrawAmount.value = null;
 
   refetch(); // fire-and-forget
+
+  if (!transactionResponse) {
+    return;
+  }
 
   const event = transactionResponse.logs.find(a => a.eventName === 'PositionWithdraw');
 
@@ -358,30 +419,47 @@ async function withdraw() {
   });
 }
 
-async function deposit() {
-  isMetamaskBusy.value = true;
-
-  const steps = [
-    'Approving...',
-    'Depositing...',
-    'Success!'
-  ];
-
+async function depositClicked() {
   const amountSnapped = toValue(isDepositTokenNativeCurrency)
     ? toValue(depositAmount)
     : snapTo100Percent(toValue(depositAmount), toValue(selectedDepositTokenBalanceOrNative));
 
+  isMetamaskBusy.value = true;
+
+  const steps = [];
+
   if (toValue(isDepositTokenNativeCurrency)) {
-    steps.unshift('Wrapping xDai...');
-    DepositModal.open(steps);
+    steps.push('Wrapping xDai...');
+  }
+
+  const allowance = await toValue(wxdaiContract).allowance(address.value, toValue(asdaiContract).address);
+  if (allowance < amountSnapped) {
+    steps.push('Approving...');
+  }
+
+  steps.push('Depositing...');
+  steps.push('Success!');
+
+  DepositModal.open(steps);
+
+  let tr;
+  let gasLimit;
+
+  if (toValue(isDepositTokenNativeCurrency)) {
+    gasLimit = await estimateGas(
+      () => toValue(wxdaiContract).connect(toValue(signer)).deposit.estimateGas({ value: toValue(amountSnapped) }),
+      () => Modal.error("Error estimating gas for wrapping, try again later.")
+    );
+
+    if (!gasLimit) {
+      return;
+    }
 
     try {
-      const tr = await toValue(wxdaiContract).connect(toValue(signer)).deposit({ value: toValue(amountSnapped) });
-      await tr.wait(2);
+      tr = await toValue(wxdaiContract).connect(toValue(signer)).deposit({ value: toValue(amountSnapped), gasLimit });
 
     } catch (error) {
-      DepositModal.close();
-      isMetamaskBusy.value = false;
+      closeModalAndMetamaskIsFree();
 
       if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
         // user rejected
@@ -394,21 +472,23 @@ async function deposit() {
     }
 
     DepositModal.nextStep();
-
-  } else {
-    DepositModal.open(steps);
   }
 
-  let tr;
-
-  const allowance = await toValue(wxdaiContract).allowance(address.value, toValue(asdaiContract).address);
   if (allowance < amountSnapped) {
+    gasLimit = await estimateGas(
+      () => toValue(wxdaiContract).connect(toValue(signer)).approve.estimateGas(toValue(asdaiContract).address, amountSnapped),
+      () => Modal.error("Error estimating gas for approval, try again later.")
+    );
+
+    if (!gasLimit) {
+      return;
+    }
+
     try {
-      tr = await toValue(wxdaiContract).connect(toValue(signer)).approve(toValue(asdaiContract).address, amountSnapped);
+      tr = await toValue(wxdaiContract).connect(toValue(signer)).approve(toValue(asdaiContract).address, amountSnapped, { gasLimit });
 
     } catch (error) {
-      DepositModal.close();
-      isMetamaskBusy.value = false;
+      closeModalAndMetamaskIsFree();
 
       if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
         // user rejected
@@ -416,34 +496,68 @@ async function deposit() {
       }
 
       console.error(error);
-      Modal.error("Error approving");
+      Modal.error("Error approving wxDai.");
       return;
     }
+
+    try {
+      tr.wait(1);
+    } catch {
+      // ignored
+    }
+
+    DepositModal.nextStep();
   }
 
-  DepositModal.nextStep();
+  let c = 0;
+
+  do {
+    try {
+      gasLimit = await toValue(asdaiContract).connect(toValue(signer)).deposit.estimateGas(amountSnapped);
+      break; // once we have estimation
+
+    } catch (error) {
+      const decodedError = decodeError(toValue(asdaiContract), error);
+      // if this is Asdai contract error then it's definitely valid, return immediately
+      if (decodedError) {
+        closeModalAndMetamaskIsFree();
+        Modal.error(DEPOSIT_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR[decodedError.name] || "(unknown error)");
+        return;
+      }
+
+      console.error(error);
+
+      if (++c >= 3) {
+        closeModalAndMetamaskIsFree();
+        // FIXME detailed error
+        Modal.error("Error estimating gas for deposit, try again later." + error.message);
+        return;
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  } while (!gasLimit); // might as well be `true`
+
+  gasLimit = gasLimit * 130n / 100n;
 
   try {
-    tr = await toValue(asdaiContract).connect(toValue(signer)).deposit(amountSnapped);
+    tr = await toValue(asdaiContract).connect(toValue(signer)).deposit(amountSnapped, { gasLimit });
 
   } catch (error) {
-    DepositModal.close();
-    isMetamaskBusy.value = false;
+    closeModalAndMetamaskIsFree();
 
-    if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
-      // user rejected
-      return;
-    }
-
-    const decodedError = decodeError(toValue(asdaiContract), error);
-    if (!decodedError) {
-      console.error(error);
-      Modal.error("Error depositing.");
+    if (isMetamaskRejected(error)) {
       return;
     }
 
     console.error(error);
-    Modal.error(DEPOSIT_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR[decodedError.name] || "(unknown error)");
+
+    const decodedError = decodeError(toValue(asdaiContract), error);
+    if (decodedError) {
+      Modal.error(DEPOSIT_ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR[decodedError.name] || "(unknown error)");
+    } else {
+      Modal.error("Error depositing.");
+    }
 
     return;
   }
@@ -452,19 +566,23 @@ async function deposit() {
 
   try {
     transactionResponse = await tr.wait(4);
-    DepositModal.close();
 
   } catch (error) {
-    DepositModal.close();
     console.error(error);
-    Modal.alert("Error confirming deposit.");
+    Modal.error("Error confirming deposit.");
+    // do not return
   }
 
-  isMetamaskBusy.value = false;
+  closeModalAndMetamaskIsFree();
+
   depositInput.value.reset();
   depositAmount.value = null;
 
   refetch(); // fire-and-forget
+
+  if (!transactionResponse) {
+    return;
+  }
 
   const event = transactionResponse.logs.find(a => a.eventName === 'PositionDeposit');
 
@@ -486,6 +604,11 @@ function showApyModal() {
     componentData: { apy: apy.value },
     okButton: 'Okay, thanks'
   });
+}
+
+function closeModalAndMetamaskIsFree() {
+  DepositModal.close();
+  isMetamaskBusy.value = false;
 }
 </script>
 
