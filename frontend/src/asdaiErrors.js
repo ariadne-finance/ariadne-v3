@@ -1,10 +1,12 @@
 export function decodeError(contract, error) {
-  if (!error?.data?.data) {
+  const data = error?.data?.data || error?.data;
+
+  if (!data) {
     return null;
   }
 
   try {
-    return contract.interface.parseError(error.data.data);
+    return contract.interface.parseError(data);
   } catch (e) {
     console.error("Cannot decode this contract error", e);
   }
