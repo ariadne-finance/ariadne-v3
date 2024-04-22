@@ -118,7 +118,7 @@ import CurrencyInputWithdraw from '@/components/CurrencyInputWithdraw.vue';
 import { useWallet } from '@/useWallet';
 import { useAsdai } from '@/useAsdai';
 import { apy, apyHr, loadApy } from '@/apy';
-import { decodeError, ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR, isMetamaskRejected } from '@/asdaiErrors';
+import { decodeError, ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR, isMetamaskRejected, isMetamaskMissingRorV } from '@/asdaiErrors';
 import { Modal, DepositModal, WithdrawModal } from '@/useModal';
 import ModalDetailedError from '@/components/ModalDetailedError.vue';
 import ModalApy from '@/components/ModalApy.vue';
@@ -394,8 +394,12 @@ async function withdrawClicked() {
 
         closeModalAndMetamaskIsFree();
 
-        // FIXME detailed error
-        Modal.error("Error estimating gas for withdrawal, try again later." + error.message);
+        showDetailedErrorModal({
+          title: "Oops",
+          text: "Error estimating gas for withdrawal. Try again later.",
+          detailsMessage: error.message
+        });
+
         return;
       }
 
@@ -409,29 +413,55 @@ async function withdrawClicked() {
     tr = await toValue(asdaiContract).connect(toValue(signer)).withdraw(amountSnapped, { gasLimit });
 
   } catch (error) {
+    if (isMetamaskMissingRorV(error)) {
+      Sentry.captureMessage("Missing r or v", {
+        tags: {
+          operation: 'withdraw',
+          step: 'tx'
+        }
+      });
+
+    } else {
+      closeModalAndMetamaskIsFree();
+
+      if (isMetamaskRejected(error)) {
+        return;
+      }
+
+      if (possiblyDecodeAndReportError('withdraw', 'tx', error)) {
+        return;
+      }
+
+      console.error(error);
+
+      Sentry.captureException(error, {
+        tags: {
+          operation: 'withdraw',
+          step: 'tx'
+        },
+        extra: {
+          message: error.message
+        }
+      });
+
+      Modal.error("Error withdrawing.");
+
+      return;
+    }
+  }
+
+  withdrawInput.value.reset();
+  withdrawAmount.value = null;
+
+  refetch(); // fire-and-forget
+
+  if (!tr) {
     closeModalAndMetamaskIsFree();
 
-    if (isMetamaskRejected(error)) {
-      return;
-    }
-
-    if (possiblyDecodeAndReportError('withdraw', 'tx', error)) {
-      return;
-    }
-
-    console.error(error);
-
-    Sentry.captureException(error, {
-      tags: {
-        operation: 'withdraw',
-        step: 'tx'
-      },
-      extra: {
-        message: error.message
-      }
+    Modal.alert({
+      title: "Well...",
+      body: "Withdrawal transaction went through, but we were unable to confirm it. Please check your wallet in a sec."
     });
-
-    Modal.error("Error withdrawing.");
 
     return;
   }
@@ -454,20 +484,17 @@ async function withdrawClicked() {
       }
     });
 
-    Modal.error("Error confirming withdrawal.");
-    // do not return
+    closeModalAndMetamaskIsFree();
+
+    Modal.alert({
+      title: "Well...",
+      body: "Withdrawal transaction went through, but we were unable to confirm it. Please check your wallet in a sec."
+    });
+
+    return;
   }
 
   closeModalAndMetamaskIsFree();
-
-  withdrawInput.value.reset();
-  withdrawAmount.value = null;
-
-  refetch(); // fire-and-forget
-
-  if (!transactionResponse) {
-    return;
-  }
 
   const event = transactionResponse.logs.find(a => a.eventName === 'PositionWithdraw');
 
@@ -540,31 +567,41 @@ async function depositClicked() {
       tr = await toValue(wxdaiContract).connect(toValue(signer)).deposit({ value: toValue(amountSnapped), gasLimit });
 
     } catch (error) {
-      closeModalAndMetamaskIsFree();
+      if (isMetamaskMissingRorV(error)) {
+        Sentry.captureMessage("Missing r or v", {
+          tags: {
+            operation: 'wrap',
+            step: 'tx'
+          }
+        });
 
-      if (isMetamaskRejected(error)) {
+      } else {
+        closeModalAndMetamaskIsFree();
+
+        if (isMetamaskRejected(error)) {
+          return;
+        }
+
+        console.error(error);
+
+        Sentry.captureException(error, {
+          tags: {
+            operation: 'wrap',
+            step: 'tx'
+          },
+          extra: {
+            message: error.message
+          }
+        });
+
+        showDetailedErrorModal({
+          title: "Oops",
+          text: "Error wrapping xDai into wxDai. Try again later.",
+          detailsMessage: error.message
+        });
+
         return;
       }
-
-      console.error(error);
-
-      Sentry.captureException(error, {
-        tags: {
-          operation: 'wrap',
-          step: 'estimateGas'
-        },
-        extra: {
-          message: error.message
-        }
-      });
-
-      showDetailedErrorModal({
-        title: "Oops",
-        text: "Error wrapping xDai into wxDai. Try again later.",
-        detailsMessage: error.message
-      });
-
-      return;
     }
 
     DepositModal.nextStep();
@@ -589,34 +626,45 @@ async function depositClicked() {
       tr = await toValue(wxdaiContract).connect(toValue(signer)).approve(toValue(asdaiContract).address, amountSnapped, { gasLimit });
 
     } catch (error) {
-      closeModalAndMetamaskIsFree();
+      if (isMetamaskMissingRorV(error)) {
+        Sentry.captureMessage("Missing r or v", {
+          tags: {
+            operation: 'approve',
+            step: 'tx'
+          }
+        });
 
-      if (isMetamaskRejected(error)) {
+      } else {
+        closeModalAndMetamaskIsFree();
+
+        if (isMetamaskRejected(error)) {
+          return;
+        }
+
+        console.error(error);
+
+        Sentry.captureException(error, {
+          tags: {
+            operation: 'approve',
+            step: 'tx'
+          },
+          extra: {
+            message: error.message
+          }
+        });
+
+        showDetailedErrorModal({
+          title: "Oops",
+          text: "Error approving wxDai. Try again later.",
+          detailsMessage: error.message
+        });
+
         return;
       }
-
-      console.error(error);
-
-      Sentry.captureException(error, {
-        tags: {
-          operation: 'approve',
-          step: 'tx'
-        },
-        extra: {
-          message: error.message
-        }
-      });
-
-      showDetailedErrorModal({
-        title: "Oops",
-        text: "Error approving wxDai. Try again later.",
-        detailsMessage: error.message
-      });
-
-      return;
     }
 
     try {
+      // tr might be null here due to 'missing r'
       tr.wait(1);
     } catch {
       // ignored
@@ -672,32 +720,59 @@ async function depositClicked() {
     tr = await toValue(asdaiContract).connect(toValue(signer)).deposit(amountSnapped, { gasLimit });
 
   } catch (error) {
-    closeModalAndMetamaskIsFree();
+    if (isMetamaskMissingRorV(error)) {
+      Sentry.captureMessage("Missing r or v", {
+        tags: {
+          operation: 'deposit',
+          step: 'tx'
+        }
+      });
 
-    if (isMetamaskRejected(error)) {
+    } else {
+      closeModalAndMetamaskIsFree();
+
+      if (isMetamaskRejected(error)) {
+        return;
+      }
+
+      if (possiblyDecodeAndReportError('deposit', 'tx', error)) {
+        return;
+      }
+
+      console.error(error);
+
+      Sentry.captureException(error, {
+        tags: {
+          operation: 'deposit',
+          step: 'tx'
+        },
+        extra: {
+          message: error.message
+        }
+      });
+
+      showDetailedErrorModal({
+        title: "Oops",
+        text: "Error depositing. Try again later.",
+        detailsMessage: error.message
+      });
+
       return;
     }
+  }
 
-    // if (possiblyDecodeAndReportError('deposit', 'tx', error)) {
-    //   return;
-    // }
+  depositInput.value.reset();
+  depositAmount.value = null;
 
-    console.error(error);
+  refetch(); // fire-and-forget
 
-    Sentry.captureException(error, {
-      tags: {
-        operation: 'deposit',
-        step: 'tx'
-      },
-      extra: {
-        message: error.message
-      }
-    });
+  // because of the 'missing r' issue
+  if (!tr) {
+    closeModalAndMetamaskIsFree();
 
-    showDetailedErrorModal({
-      title: "Oops",
-      text: "Error depositing. Try again later.",
-      detailsMessage: error.message
+    Modal.alert({
+      title: "Well...",
+      body: "Deposit transaction went through, but we were unable to confirm it. Please check your wallet in a sec."
     });
 
     return;
@@ -721,24 +796,17 @@ async function depositClicked() {
       }
     });
 
+    closeModalAndMetamaskIsFree();
+
     Modal.alert({
       title: "Oops",
-      body: "Deposit transaction went through, but we were unable to confirm it. Please check your wallet."
+      body: "Deposit transaction went through, but we were unable to confirm it. Please check your wallet in a sec."
     });
 
-    // do not return
+    return;
   }
 
   closeModalAndMetamaskIsFree();
-
-  depositInput.value.reset();
-  depositAmount.value = null;
-
-  refetch(); // fire-and-forget
-
-  if (!transactionResponse) {
-    return;
-  }
 
   const event = transactionResponse.logs.find(a => a.eventName === 'PositionDeposit');
 

@@ -27,3 +27,11 @@ export const ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR = {
 export function isMetamaskRejected(error) {
   return error.code === 4001 || error.code === 'ACTION_REJECTED';
 }
+
+export function isMetamaskMissingRorV(error) {
+  if (!error?.message) {
+    return false;
+  }
+
+  return error.message.startsWith('missing r') || error.message.startsWith('missing v');
+}
