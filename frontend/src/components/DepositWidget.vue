@@ -744,7 +744,7 @@ async function processShowMainTransactionSuccessOrPartialSuccess({
   let transactionResponse;
 
   try {
-    transactionResponse = await tr.wait(4);
+    transactionResponse = await tr.wait(1);
 
   } catch (error) {
     console.error(error);
