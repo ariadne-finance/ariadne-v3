@@ -453,73 +453,7 @@ async function withdrawClicked() {
   withdrawInput.value.reset();
   withdrawAmount.value = null;
 
-  refetch(); // fire-and-forget
-
-  if (!tr) {
-    closeModalAndMetamaskIsFree();
-
-    Modal.alert({
-      title: "Well...",
-      body: "Withdrawal transaction went through, but we were unable to confirm it. Please check your wallet in a sec."
-    });
-
-    return;
-  }
-
-  let transactionResponse;
-
-  try {
-    transactionResponse = await tr.wait(4);
-
-  } catch (error) {
-    console.error(error);
-
-    Sentry.captureException(error, {
-      tags: {
-        operation: 'withdraw',
-        step: 'wait'
-      },
-      extra: {
-        message: error.message
-      }
-    });
-
-    closeModalAndMetamaskIsFree();
-
-    Modal.alert({
-      title: "Well...",
-      body: "Withdrawal transaction went through, but we were unable to confirm it. Please check your wallet in a sec."
-    });
-
-    return;
-  }
-
-  closeModalAndMetamaskIsFree();
-
-  const event = transactionResponse.logs.find(a => a.eventName === 'PositionWithdraw');
-
-  if (!event) {
-    const message = "Withdrawal event not found in transaction receipt. Please check your wallet.";
-
-    Sentry.captureMessage(message, {
-      tags: {
-        operation: 'withdraw',
-        step: 'parse'
-      },
-      extra: {
-        transactionResponse
-      }
-    });
-
-    Modal.error(message);
-
-    return;
-  }
-
-  Modal.alert({
-    title: "Success!",
-    body: `Withdrawn ${formatUnits(event.args?.amountWxdai, 18, 4, 4)} wxDai`
-  });
+  processShowWithdrawSuccessOrPartialSuccess(tr);
 }
 
 async function depositClicked() {
@@ -764,15 +698,45 @@ async function depositClicked() {
   depositInput.value.reset();
   depositAmount.value = null;
 
-  refetch(); // fire-and-forget
+  processShowDepositSuccessOrPartialSuccess(tr);
+}
 
-  // because of the 'missing r' issue
+async function processShowDepositSuccessOrPartialSuccess(tr) {
+  processShowMainTransactionSuccessOrPartialSuccess({
+    tr,
+    eventName: 'PositionDeposit',
+    operation: 'deposit',
+    partiallySuccessMessage: "Deposit transaction went through, but we were unable to confirm it. Please check your wallet in a sec.",
+    formatSuccessMessage: amount => `Deposited ${formatUnits(amount, 18, 4, 4)} wxDai`
+  });
+}
+
+async function processShowWithdrawSuccessOrPartialSuccess(tr) {
+  processShowMainTransactionSuccessOrPartialSuccess({
+    tr,
+    eventName: 'PositionWithdraw',
+    operation: 'withdraw',
+    partiallySuccessMessage: "Withdrawal transaction went through, but we were unable to confirm it. Please check your wallet in a sec.",
+    formatSuccessMessage: amount => `Withdrawn ${formatUnits(amount, 18, 4, 4)} wxDai`
+  });
+}
+
+async function processShowMainTransactionSuccessOrPartialSuccess({
+  tr,
+  eventName,
+  partiallySuccessMessage,
+  operation,
+  formatSuccessMessage
+}) {
+  // because of the missing r or v issue it may be null
   if (!tr) {
     closeModalAndMetamaskIsFree();
 
+    refetch(); // fire-and-forget
+
     Modal.alert({
       title: "Well...",
-      body: "Deposit transaction went through, but we were unable to confirm it. Please check your wallet in a sec."
+      body: partiallySuccessMessage
     });
 
     return;
@@ -788,7 +752,7 @@ async function depositClicked() {
 
     Sentry.captureException(error, {
       tags: {
-        operation: 'deposit',
+        operation,
         step: 'wait'
       },
       extra: {
@@ -799,8 +763,8 @@ async function depositClicked() {
     closeModalAndMetamaskIsFree();
 
     Modal.alert({
-      title: "Oops",
-      body: "Deposit transaction went through, but we were unable to confirm it. Please check your wallet in a sec."
+      title: "Well...",
+      body: partiallySuccessMessage
     });
 
     return;
@@ -808,14 +772,16 @@ async function depositClicked() {
 
   closeModalAndMetamaskIsFree();
 
-  const event = transactionResponse.logs.find(a => a.eventName === 'PositionDeposit');
+  refetch(); // fire-and-forget
+
+  const event = transactionResponse.logs.find(a => a.eventName === eventName);
 
   if (!event) {
-    const message = "Deposit event not found in transaction receipt. Please check your wallet.";
+    const message = eventName + " event not found in transaction receipt. Please check your wallet in a sec.";
 
     Sentry.captureMessage(message, {
       tags: {
-        operation: 'deposit',
+        operation,
         step: 'parse'
       },
       extra: {
@@ -830,7 +796,7 @@ async function depositClicked() {
 
   Modal.alert({
     title: "Success!",
-    body: `Deposited ${formatUnits(event.args?.amountWxdai, 18, 4, 4)} wxDai`
+    body: formatSuccessMessage(event.args?.amountWxdai)
   });
 }
 
