@@ -76,6 +76,7 @@ function setWatchers() {
   watchEffect(async () => {
     if (connectedWallet.value) {
       const p = new ethers.BrowserProvider(connectedWallet.value.provider, 'any');
+      // p.on('debug', console.log);
       signer.value = await p.getSigner();
 
       provider.value = new ethers.JsonRpcProvider(GNOSIS.rpcUrl, { chainId: GNOSIS.id, name: GNOSIS.label });
