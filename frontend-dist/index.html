@@ -6,6 +6,18 @@
 
     <title>Ariadne leveraged farming vault</title>
 
+    <script src="https://js.sentry-cdn.com/6deeac70d0248fd4e917bc6a6791a600.min.js" crossorigin="anonymous"></script>
+
+    <script>
+      if (location.hostname !== 'localhost') {
+        Sentry.onLoad(function() {
+          Sentry.init({
+            attachStacktrace: true
+          });
+        });
+      }
+    </script>
+
     <script async data-domain="app.ariadne.finance" src="/js/script.js"></script>
     <script>window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) }</script>
 
@@ -37,8 +49,8 @@
     <meta property="og:description" content="This on-chain strategy utilizes sDAI on the Gnosis blockchain — a high APY on your stables with minimal risk.">
 
     <meta name="description" content="This on-chain strategy utilizes sDAI on the Gnosis blockchain — a high APY on your stables with minimal risk.">
-    <script type="module" crossorigin src="/assets/index-Ddcn6UEV.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-pOYYZvrC.css">
+    <script type="module" crossorigin src="/assets/index-BCbfOLQ9.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-RiaqDgcU.css">
   </head>
   <body class="dark">
     <div id="app"></div>
