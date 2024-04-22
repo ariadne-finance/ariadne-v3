@@ -32,7 +32,7 @@
               <div v-if="isCloseButtonVisible" class="absolute top-2 right-6 z-10">
                 <button
                   type="button"
-                  class="btn btn-link text-primary-200 bg-primary-400 px-1 py-0 mb-0 items-baseline hover:brightness-100 hover:text-primary-200/60"
+                  class="btn btn-link text-primary-200 bg-primary-400 px-1 py-0 mb-0 items-baseline hover:brightness-100 hover:text-primary-200/60 outline-none focus:outline-none"
                   @click="hide(null)"
                 >
                   &times;
@@ -201,6 +201,11 @@ function dialog(options = {}) {
   applyOptions(options);
 
   return new Promise(resolve => {
+    okClickHandler.value = () => {
+      resolve();
+      hide();
+    };
+
     afterHideHandler.value = payload => {
       resolve(payload);
     };
