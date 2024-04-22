@@ -1,5 +1,5 @@
 <template>
-  <Disclosure v-slot="{ open }" as="div" class="w-full max-w-xl">
+  <Disclosure v-slot="{ open }" as="div" class="w-[90vw] max-w-xl">
     <DisclosureButton
       class="flex w-full justify-between px-8 py-4 text-left text-amber"
     >
@@ -18,7 +18,7 @@
       leave-from-class="transform max-h-[1000px]"
       leave-to-class="transform max-h-0"
     >
-      <DisclosurePanel class="px-8 pb-8 pt-4 text-sm text-amber-dark break-all overflow-hidden">
+      <DisclosurePanel class="px-8 pb-8 pt-4 text-sm text-amber-dark break-all overflow-hidden transition-all">
         {{ data.detailsMessage }}
       </DisclosurePanel>
     </transition>
