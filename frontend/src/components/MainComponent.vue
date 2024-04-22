@@ -65,20 +65,6 @@ import { computed } from 'vue';
 import { ASDAI_CONTRACT_ADDRESS } from '@/constants';
 import { isApyReady, apyHr } from '@/apy';
 
-// FIXME: move to DepositWidget
-import { Modal } from '@/useModal';
-import ModalDetailedError from './ModalDetailedError.vue';
-
-Modal.dialog({
-  title: 'Oops',
-  component: ModalDetailedError,
-  componentData: {
-    text: "Error wrapping the wrap. Come back never",
-    detailsMessage: "execution reverted (unknown custom error) (action=\"estimateGas\", data=\"0x7f5e087a\", reason=null, transaction={ \"data\": \"0xb6b55f25000000000000000000000000000000000000000000000000016345785d8a0000\", \"from\": \"0x3a15fc58Fe25eB7fd6D40cfc18c89f426f6aefA6\", \"to\": \"0x48cF154a086bAB5492A8D150f4d87a74eCf90743\" }, invocation=null, revert=null, code=CALL_EXCEPTION, version=6.12.0)"
-  },
-  cancelButton: false
-});
-
 const GNOSIS_CHAIN_ID = 0x64;
 
 const { connectedWallet, setChain, connectWallet } = useOnboard();
