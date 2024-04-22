@@ -6,19 +6,16 @@
 
     <title>Ariadne leveraged farming vault</title>
 
-    <script
-      src="https://js.sentry-cdn.com/6deeac70d0248fd4e917bc6a6791a600.min.js"
-      crossorigin="anonymous"
-    ></script>
+    <script src="https://js.sentry-cdn.com/6deeac70d0248fd4e917bc6a6791a600.min.js" crossorigin="anonymous"></script>
 
     <script>
-      Sentry.onLoad(function() {
-        Sentry.init({
-          attachStacktrace: true
+      if (location.hostname !== 'localhost') {
+        Sentry.onLoad(function() {
+          Sentry.init({
+            attachStacktrace: true
+          });
         });
-      });
-
-
+      }
     </script>
 
     <script async data-domain="app.ariadne.finance" src="/js/script.js"></script>
