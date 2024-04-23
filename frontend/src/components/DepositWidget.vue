@@ -821,6 +821,7 @@ function showDetailedErrorModal({ title, text, detailsMessage }) {
 }
 
 function closeModalAndMetamaskIsFree() {
+  WithdrawModal.close();
   DepositModal.close();
   isMetamaskBusy.value = false;
 }
