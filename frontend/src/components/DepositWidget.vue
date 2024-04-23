@@ -784,6 +784,7 @@ async function processShowMainTransactionSuccessOrPartialSuccess({
         step: 'parse'
       },
       extra: {
+        transactionResponseLogsLength: transactionResponse?.logs?.length,
         transactionResponse
       }
     });
@@ -821,6 +822,7 @@ function showDetailedErrorModal({ title, text, detailsMessage }) {
 }
 
 function closeModalAndMetamaskIsFree() {
+  WithdrawModal.close();
   DepositModal.close();
   isMetamaskBusy.value = false;
 }
