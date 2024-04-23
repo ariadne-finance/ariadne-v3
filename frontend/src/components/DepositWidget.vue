@@ -784,6 +784,7 @@ async function processShowMainTransactionSuccessOrPartialSuccess({
         step: 'parse'
       },
       extra: {
+        transactionResponseLogsLength: transactionResponse?.logs?.length,
         transactionResponse
       }
     });
