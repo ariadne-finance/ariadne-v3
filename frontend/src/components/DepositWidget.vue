@@ -367,49 +367,49 @@ async function withdrawClicked() {
   let c = 0;
   let gasLimit;
 
-  do {
-    try {
-      gasLimit = await toValue(asdaiContract).connect(toValue(signer)).withdraw.estimateGas(amountSnapped);
-      break; // once we have estimation
+  // do {
+  //   try {
+  //     gasLimit = await toValue(asdaiContract).connect(toValue(signer)).withdraw.estimateGas(amountSnapped);
+  //     break; // once we have estimation
 
-    } catch (error) {
-      if (possiblyDecodeAndReportError('withdraw', 'estimateGas', error)) {
-        closeModalAndMetamaskIsFree();
-        return;
-      }
+  //   } catch (error) {
+  //     if (possiblyDecodeAndReportError('withdraw', 'estimateGas', error)) {
+  //       closeModalAndMetamaskIsFree();
+  //       return;
+  //     }
 
-      console.error(error);
+  //     console.error(error);
 
-      if (++c >= 3) {
-        Sentry.captureException(error, {
-          tags: {
-            operation: 'withdraw',
-            step: 'estimateGas'
-          },
-          extra: {
-            message: error.message
-          }
-        });
+  //     if (++c >= 3) {
+  //       Sentry.captureException(error, {
+  //         tags: {
+  //           operation: 'withdraw',
+  //           step: 'estimateGas'
+  //         },
+  //         extra: {
+  //           message: error.message
+  //         }
+  //       });
 
-        closeModalAndMetamaskIsFree();
+  //       closeModalAndMetamaskIsFree();
 
-        showDetailedErrorModal({
-          title: "Oops",
-          text: "Error estimating gas for withdrawal. Try again later.",
-          detailsMessage: error.message
-        });
+  //       showDetailedErrorModal({
+  //         title: "Oops",
+  //         text: "Error estimating gas for withdrawal. Try again later.",
+  //         detailsMessage: error.message
+  //       });
 
-        return;
-      }
+  //       return;
+  //     }
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-  } while (!gasLimit); // might as well be `true`
+  //     await new Promise(resolve => setTimeout(resolve, 1000));
+  //   }
+  // } while (!gasLimit); // might as well be `true`
 
-  gasLimit = gasLimit * 130n / 100n;
+  // gasLimit = gasLimit * 130n / 100n;
 
   try {
-    tr = await toValue(asdaiContract).connect(toValue(signer)).withdraw(amountSnapped, { gasLimit });
+    tr = await toValue(asdaiContract).connect(toValue(signer)).withdraw(amountSnapped);
 
   } catch (error) {
     if (isMetamaskMissingRorV(error)) {
@@ -482,22 +482,22 @@ async function depositClicked() {
   let gasLimit;
 
   if (toValue(isDepositTokenNativeCurrency)) {
-    gasLimit = await estimateGas(
-      'wrap',
-      () => toValue(wxdaiContract).connect(toValue(signer)).deposit.estimateGas({ value: toValue(amountSnapped) }),
-      error => showDetailedErrorModal({
-        title: "Oops",
-        text: "Error estimating gas for wrapping. Try again later.",
-        detailsMessage: error.message
-      })
-    );
+    // gasLimit = await estimateGas(
+    //   'wrap',
+    //   () => toValue(wxdaiContract).connect(toValue(signer)).deposit.estimateGas({ value: toValue(amountSnapped) }),
+    //   error => showDetailedErrorModal({
+    //     title: "Oops",
+    //     text: "Error estimating gas for wrapping. Try again later.",
+    //     detailsMessage: error.message
+    //   })
+    // );
 
-    if (!gasLimit) {
-      return;
-    }
+    // if (!gasLimit) {
+    //   return;
+    // }
 
     try {
-      tr = await toValue(wxdaiContract).connect(toValue(signer)).deposit({ value: toValue(amountSnapped), gasLimit });
+      tr = await toValue(wxdaiContract).connect(toValue(signer)).deposit({ value: toValue(amountSnapped) });
 
     } catch (error) {
       if (isMetamaskMissingRorV(error)) {
@@ -541,22 +541,22 @@ async function depositClicked() {
   }
 
   if (allowance < amountSnapped) {
-    gasLimit = await estimateGas(
-      'approve',
-      () => toValue(wxdaiContract).connect(toValue(signer)).approve.estimateGas(toValue(asdaiContract).address, amountSnapped),
-      error => showDetailedErrorModal({
-        title: "Oops",
-        text: "Error estimating gas for approval. Try again later.",
-        detailsMessage: error.message
-      })
-    );
+    // gasLimit = await estimateGas(
+    //   'approve',
+    //   () => toValue(wxdaiContract).connect(toValue(signer)).approve.estimateGas(toValue(asdaiContract).address, amountSnapped),
+    //   error => showDetailedErrorModal({
+    //     title: "Oops",
+    //     text: "Error estimating gas for approval. Try again later.",
+    //     detailsMessage: error.message
+    //   })
+    // );
 
-    if (!gasLimit) {
-      return;
-    }
+    // if (!gasLimit) {
+    //   return;
+    // }
 
     try {
-      tr = await toValue(wxdaiContract).connect(toValue(signer)).approve(toValue(asdaiContract).address, amountSnapped, { gasLimit });
+      tr = await toValue(wxdaiContract).connect(toValue(signer)).approve(toValue(asdaiContract).address, amountSnapped);
 
     } catch (error) {
       if (isMetamaskMissingRorV(error)) {
@@ -608,49 +608,49 @@ async function depositClicked() {
 
   let c = 0;
 
-  do {
-    try {
-      gasLimit = await toValue(asdaiContract).connect(toValue(signer)).deposit.estimateGas(amountSnapped);
-      break; // once we have estimation
+  // do {
+  //   try {
+  //     gasLimit = await toValue(asdaiContract).connect(toValue(signer)).deposit.estimateGas(amountSnapped);
+  //     break; // once we have estimation
 
-    } catch (error) {
-      if (possiblyDecodeAndReportError('deposit', 'estimateGas', error)) {
-        closeModalAndMetamaskIsFree();
-        return;
-      }
+  //   } catch (error) {
+  //     if (possiblyDecodeAndReportError('deposit', 'estimateGas', error)) {
+  //       closeModalAndMetamaskIsFree();
+  //       return;
+  //     }
 
-      console.error(error);
+  //     console.error(error);
 
-      if (++c >= 3) {
-        Sentry.captureException(error, {
-          tags: {
-            operation: 'deposit',
-            step: 'estimateGas'
-          },
-          extra: {
-            message: error.message
-          }
-        });
+  //     if (++c >= 3) {
+  //       Sentry.captureException(error, {
+  //         tags: {
+  //           operation: 'deposit',
+  //           step: 'estimateGas'
+  //         },
+  //         extra: {
+  //           message: error.message
+  //         }
+  //       });
 
-        closeModalAndMetamaskIsFree();
+  //       closeModalAndMetamaskIsFree();
 
-        showDetailedErrorModal({
-          title: "Oops",
-          text: "Error estimating gas for deposit. Try again later.",
-          detailsMessage: error.message
-        });
+  //       showDetailedErrorModal({
+  //         title: "Oops",
+  //         text: "Error estimating gas for deposit. Try again later.",
+  //         detailsMessage: error.message
+  //       });
 
-        return;
-      }
+  //       return;
+  //     }
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-  } while (!gasLimit); // might as well be `true`
+  //     await new Promise(resolve => setTimeout(resolve, 1000));
+  //   }
+  // } while (!gasLimit); // might as well be `true`
 
-  gasLimit = gasLimit * 130n / 100n;
+  // gasLimit = gasLimit * 130n / 100n;
 
   try {
-    tr = await toValue(asdaiContract).connect(toValue(signer)).deposit(amountSnapped, { gasLimit });
+    tr = await toValue(asdaiContract).connect(toValue(signer)).deposit(amountSnapped);
 
   } catch (error) {
     if (isMetamaskMissingRorV(error)) {
