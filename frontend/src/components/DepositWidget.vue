@@ -778,16 +778,12 @@ async function processShowMainTransactionSuccessOrPartialSuccess({
   if (!event) {
     const message = eventName + " event not found in transaction receipt. Please check your wallet in a sec.";
 
-    Sentry.captureMessage(message, {
-      tags: {
-        operation,
-        step: 'parse'
-      },
-      extra: {
-        transactionResponseLogsLength: transactionResponse?.logs?.length,
-        transactionResponse
-      }
-    });
+    const scope = new Sentry.Scope();
+    scope.setTag('operation', operation);
+    scope.setTag('step', 'parse');
+    scope.setContext('transactionResponseLogs', { logs: transactionResponse.logs });
+    scope.setExtra('transactionResponseLogsLength', transactionResponse.logs.length);
+    Sentry.captureMessage(message, scope);
 
     Modal.error(message);
 
