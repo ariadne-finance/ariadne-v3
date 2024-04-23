@@ -782,7 +782,7 @@ async function processShowMainTransactionSuccessOrPartialSuccess({
     scope.setTag('operation', operation);
     scope.setTag('step', 'parse');
     scope.setContext('transactionResponseLogs', { logs: transactionResponse.logs });
-    scope.setExtra('transactionResponseLogsLength', transactionResponse.logs.length);
+    scope.setExtra('transactionResponseLogsLength', transactionResponse.logs?.length);
     Sentry.captureMessage(message, scope);
 
     Modal.error(message);
