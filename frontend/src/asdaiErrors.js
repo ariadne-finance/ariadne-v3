@@ -1,5 +1,6 @@
 export function decodeError(contract, error) {
-  const data = error?.data?.data || error?.data;
+  // raw transaction, or estimateGas error or ethers error or or or ... stop it
+  const data = error?.data?.originalError?.data || error?.data?.data || error?.data;
 
   if (!data) {
     return null;
@@ -19,7 +20,7 @@ export const ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR = {
   AsdaiUnknownFlashloanMode: 'Internal contract error: unknown flashloan mode',
   AsdaiIncorrectFlashloanTokenReceived: 'Internal contract error: incorrect flashloan token received',
   AsdaiRebalanceNotNeccessary: 'Contract decided that rebalance is not neccessary now',
-  AsdaiNotEnoughToBorrow: 'Internal contract error: not enough to borrow on Aave',
+  AsdaiNotEnoughToBorrow: 'Not enough token to borrow on Aave. Please try to deposit larger amount',
   AsdaiIncorrectDepositOrWithdrawalAmount: 'Incorrect deposit or withdraw amount (too low or too high)',
   AsdaiOperationDisabledByFlags: "Operation is currently disabled on contract"
 };

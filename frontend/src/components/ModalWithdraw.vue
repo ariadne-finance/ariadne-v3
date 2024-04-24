@@ -21,9 +21,11 @@
       {{ currentStep }}
     </div>
 
+    <!--
     <div v-if="data.step === data.steps?.length" class="shrink-0 flex justify-center">
       <button class="btn-primary" @click="emit('close')">Close</button>
     </div>
+    -->
 
     <div v-if="data.steps?.length > 1 && currentStep != SUCCESS" class="shrink-0 mt-4 mb-6">
       <div class="flex flex-row items-center justify-center gap-x-2">
