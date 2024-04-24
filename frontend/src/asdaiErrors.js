@@ -19,7 +19,7 @@ export const ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR = {
   AsdaiUnknownFlashloanMode: 'Internal contract error: unknown flashloan mode',
   AsdaiIncorrectFlashloanTokenReceived: 'Internal contract error: incorrect flashloan token received',
   AsdaiRebalanceNotNeccessary: 'Contract decided that rebalance is not neccessary now',
-  AsdaiNotEnoughToBorrow: 'Internal contract error: not enough to borrow on Aave',
+  AsdaiNotEnoughToBorrow: 'Not enough token to borrow on Aave. Please try to deposit larger amount',
   AsdaiIncorrectDepositOrWithdrawalAmount: 'Incorrect deposit or withdraw amount (too low or too high)',
   AsdaiOperationDisabledByFlags: "Operation is currently disabled on contract"
 };
