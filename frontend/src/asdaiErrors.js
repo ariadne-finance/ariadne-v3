@@ -1,5 +1,6 @@
 export function decodeError(contract, error) {
-  const data = error?.data?.data || error?.data;
+  // raw transaction, or estimateGas error or ethers error or or or ... stop it
+  const data = error?.data?.originalError?.data || error?.data?.data || error?.data;
 
   if (!data) {
     return null;
