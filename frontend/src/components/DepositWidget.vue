@@ -308,7 +308,7 @@ async function estimateGas(operation, callback, onError) {
         Sentry.captureException(error, {
           tags: {
             operation,
-            estimateGas: true
+            step: 'estimateGas'
           },
           extra: {
             message: error.message
