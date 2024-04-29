@@ -87,7 +87,15 @@ async function updateApy() {
 }
 
 async function cycleLoadApy() {
-  await updateApy();
+  try {
+    await updateApy();
+
+  } catch (e) {
+    console.error("Catched error");
+    console.error(e);
+    console.error("Recovered");
+  }
+
   setTimeout(cycleLoadApy, 10 * 60 * 1000);
 }
 
