@@ -21,10 +21,11 @@ uint8 constant REBALANCE_ITERATIONS_MAX = 10;
 
 uint256 constant AAVE_INTEREST_RATE_MODE_VARIABLE = 2;
 
-uint8 constant FLASH_LOAN_MODE_DEPOSIT  = 1;
-uint8 constant FLASH_LOAN_MODE_WITHDRAW = 2;
-uint8 constant FLASH_LOAN_MODE_CLOSE    = 3;
-uint8 constant FLASH_LOAN_MODE_RESYNC   = 4;
+uint8 constant FLASH_LOAN_MODE_DEPOSIT       = 1;
+uint8 constant FLASH_LOAN_MODE_WITHDRAW      = 2;
+uint8 constant FLASH_LOAN_MODE_CLOSE         = 3;
+uint8 constant FLASH_LOAN_MODE_RESYNC_STEP_1 = 4;
+uint8 constant FLASH_LOAN_MODE_RESYNC_STEP_2 = 5;
 
 uint8 constant FLAGS_POSITION_CLOSED   = 1 << 0;
 uint8 constant FLAGS_DEPOSIT_PAUSED    = 1 << 1;
@@ -309,9 +310,7 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
             (, uint256 wxdaiPrice) = abi.decode(userData, (uint8, uint256));
 
             // there is no dust: at this point all wxdai amount belongs to the investor.
-            uint256 wxdaiBalance = wxdai().balanceOf(address(this));
-
-            SAVINGS_X_DAI_ADAPTER.deposit(wxdaiBalance, address(this));
+            SAVINGS_X_DAI_ADAPTER.deposit(wxdai().balanceOf(address(this)), address(this));
 
             // zero wxdai left on contract at this point
 
@@ -367,33 +366,32 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
 
             wxdai().transfer(address(BALANCER_VAULT), amounts[0]);
 
-        } else if (mode == FLASH_LOAN_MODE_RESYNC) {
-            (, uint256 wxdaiPrice) = abi.decode(userData, (uint8, uint256));
-
+        } else if (mode == FLASH_LOAN_MODE_RESYNC_STEP_1) {
             pool().repay(address(wxdai()), 2 ** 256 - 1, AAVE_INTEREST_RATE_MODE_VARIABLE, address(this));
-
-            uint256 wxdaiBalanceAfterRepay = wxdai().balanceOf(address(this));
-
             pool().withdraw(address(sdai()), 2 ** 256 - 1, address(this));
             SAVINGS_X_DAI_ADAPTER.redeem(sdai().balanceOf(address(this)), address(this));
 
-            uint256 wxdaiBalanceToDeposit = wxdai().balanceOf(address(this)) - wxdaiBalanceAfterRepay;
+            if (wxdai().balanceOf(address(this)) < amounts[0]) {
+                revert AsdaiNotEnoughToBorrow();
+            }
 
-            SAVINGS_X_DAI_ADAPTER.deposit(wxdaiBalanceToDeposit, address(this));
+            wxdai().transfer(address(BALANCER_VAULT), amounts[0]);
+
+        } else if (mode == FLASH_LOAN_MODE_RESYNC_STEP_2) {
+            (, uint256 wxdaiPrice) = abi.decode(userData, (uint8, uint256));
+
+            SAVINGS_X_DAI_ADAPTER.deposit(wxdai().balanceOf(address(this)), address(this));
 
             pool().supply(address(sdai()), sdai().balanceOf(address(this)), address(this), 0);
-            pool().setUserUseReserveAsCollateral(address(sdai()), true);
-
-            uint256 wxdaiToBorrow = amounts[0] - wxdaiBalanceAfterRepay;
 
             (, , uint256 availableBorrowsBase, , ,) = pool().getUserAccountData(address(this));
             uint256 availableBorrowsWxdai = convertBaseToWxdai(availableBorrowsBase, wxdaiPrice);
 
-            if (wxdaiToBorrow > availableBorrowsWxdai) {
+            if (availableBorrowsWxdai < amounts[0]) {
                 revert AsdaiNotEnoughToBorrow();
             }
 
-            pool().borrow(address(wxdai()), wxdaiToBorrow, AAVE_INTEREST_RATE_MODE_VARIABLE, 0, address(this));
+            pool().borrow(address(wxdai()), amounts[0], AAVE_INTEREST_RATE_MODE_VARIABLE, 0, address(this));
             wxdai().transfer(address(BALANCER_VAULT), amounts[0]);
 
             // zero dust at this point because we have borrowed and returned exactly the flashloan amount
@@ -465,8 +463,18 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         (, uint256 totalDebtBase, , , ,) = pool().getUserAccountData(address(this));
         uint256 repayDebtWxdai = Math.mulDiv(convertBaseToWxdai(totalDebtBase, wxdaiPrice), 103, 100);
 
-        bytes memory userData = abi.encode(FLASH_LOAN_MODE_RESYNC, wxdaiPrice);
+        bytes memory userData = abi.encode(FLASH_LOAN_MODE_RESYNC_STEP_1);
         _doFlashLoan(address(wxdai()), repayDebtWxdai, userData);
+
+        uint256 wxdaiAmount = wxdai().balanceOf(address(this));
+
+        uint256 idealLtv = ltv() * 10 - 1; // just a tiny bit leeway
+
+        uint256 idealTotalCollateral = wxdaiAmount * 100000 / (100000 - idealLtv);
+        uint256 amountToFlashLoan = idealTotalCollateral - wxdaiAmount;
+
+        userData = abi.encode(FLASH_LOAN_MODE_RESYNC_STEP_2, wxdaiPrice);
+        _doFlashLoan(address(wxdai()), amountToFlashLoan, userData);
     }
 
     function pool()
