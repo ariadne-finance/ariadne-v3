@@ -341,6 +341,13 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
             (, , uint256 availableBorrowsBase, , ,) = pool().getUserAccountData(address(this));
 
             uint256 toWithdrawBase = availableBorrowsBase * 10000 / ltv() - 1;
+
+            if (toWithdrawBase == 0) {
+                revert AsdaiNotEnoughToBorrow();
+            }
+
+            toWithdrawBase = toWithdrawBase - 1;
+
             uint256 toWithdraw = convertBaseToSdai(toWithdrawBase, oracle().getAssetPrice(address(sdai())));
 
             pool().withdraw(address(sdai()), toWithdraw, address(this));
