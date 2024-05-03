@@ -334,6 +334,25 @@ async function estimateGas(operation, callback, onError) {
   return calculateProperGaslimit(gasLimit);
 }
 
+function possibleDecodeAndReportMessageInError({ operation, step, error }) {
+  if (!error.data?.message) {
+    return false;
+  }
+
+  Sentry.captureMessage(error.data.message, {
+    tags: {
+      operation,
+      step
+    }
+  });
+
+  closeModalAndMetamaskIsFree();
+
+  Modal.error('(' + error.data.message + ')');
+
+  return true;
+}
+
 function possiblyDecodeAndReportAsdaiError({ operation, step, error }) {
   const decodedError = decodeError(toValue(asdaiContract), error);
   if (!decodedError) {
@@ -380,20 +399,22 @@ function possiblyReportIsMetamaskMissingRorV({ operation, step, error }) {
 function captureExceptionAndShowDetailedErrorModal({ operation, step, error, message }) {
   console.error(error);
 
+  const actualMessage = error?.data?.message || error.message || message;
+
   Sentry.captureException(error, {
     tags: {
       operation,
       step
     },
     extra: {
-      message: error.message
+      actualMessage
     }
   });
 
   showDetailedErrorModal({
     title: "Oops",
     text: message,
-    detailsMessage: error.message
+    detailsMessage: actualMessage
   });
 }
 
@@ -405,6 +426,10 @@ function handleError({ operation, step, error, message }) {
   }
 
   if (possiblyDecodeAndReportAsdaiError({ operation, step, error })) {
+    return;
+  }
+
+  if (possibleDecodeAndReportMessageInError({ operation, step, error })) {
     return;
   }
 
@@ -428,8 +453,6 @@ async function estimateGasForWithdrawViaEthers(amount) {
       if (possiblyDecodeAndReportAsdaiError({ operation: 'withdraw', step: 'estimateGas', error })) {
         return null;
       }
-
-      console.error(error);
 
       if (++tries >= 3) {
         captureExceptionAndShowDetailedErrorModal({

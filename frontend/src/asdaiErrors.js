@@ -1,8 +1,21 @@
 export function decodeError(contract, error) {
   // raw transaction, or estimateGas error or ethers error or or or ... stop it
-  const data = error?.data?.originalError?.data || error?.data?.data || error?.data;
+  let data = error?.data?.originalError?.data || error?.data?.data || error?.data;
 
   if (!data) {
+    // but sometimes error is reported in the message
+    const message = error.message || error.data?.message || error.originalError?.message || error.originalError?.data?.message || '';
+    if (message.startsWith("Reverted 0x")) {
+      data = message.substring(9);
+    }
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  // or sometimes it's an object, oh gosh fuck I hate defi
+  if (typeof data === 'object') {
     return null;
   }
 
@@ -10,6 +23,8 @@ export function decodeError(contract, error) {
     return contract.interface.parseError(data);
   } catch (e) {
     console.error("Cannot decode this contract error", e);
+    debugger;
+    console.error(e);
   }
 
   return null;
