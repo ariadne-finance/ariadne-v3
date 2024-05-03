@@ -444,7 +444,7 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         _rebalance(wxdaiPrice, false);
 
         (, uint256 totalDebtBase, , , ,) = pool().getUserAccountData(address(this));
-        uint256 repayDebtWxdai = convertBaseToWxdai(totalDebtBase, wxdaiPrice) / 100 * 103;
+        uint256 repayDebtWxdai = Math.mulDiv(convertBaseToWxdai(totalDebtBase, wxdaiPrice), 103, 100);
 
         bytes memory userData = abi.encode(FLASH_LOAN_MODE_CLOSE);
         _doFlashLoan(address(wxdai()), repayDebtWxdai, userData);
