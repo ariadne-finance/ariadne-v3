@@ -24,6 +24,7 @@ uint256 constant AAVE_INTEREST_RATE_MODE_VARIABLE = 2;
 uint8 constant FLASH_LOAN_MODE_DEPOSIT  = 1;
 uint8 constant FLASH_LOAN_MODE_WITHDRAW = 2;
 uint8 constant FLASH_LOAN_MODE_CLOSE    = 3;
+uint8 constant FLASH_LOAN_MODE_RESYNC   = 4;
 
 uint8 constant FLAGS_POSITION_CLOSED   = 1 << 0;
 uint8 constant FLAGS_DEPOSIT_PAUSED    = 1 << 1;
@@ -359,6 +360,37 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
 
             wxdai().transfer(address(BALANCER_VAULT), amounts[0]);
 
+        } else if (mode == FLASH_LOAN_MODE_RESYNC) {
+            (, uint256 wxdaiPrice) = abi.decode(userData, (uint8, uint256));
+
+            pool().repay(address(wxdai()), 2 ** 256 - 1, AAVE_INTEREST_RATE_MODE_VARIABLE, address(this));
+
+            uint256 wxdaiBalanceAfterRepay = wxdai().balanceOf(address(this));
+
+            pool().withdraw(address(sdai()), 2 ** 256 - 1, address(this));
+            SAVINGS_X_DAI_ADAPTER.redeem(sdai().balanceOf(address(this)), address(this));
+
+            uint256 wxdaiBalanceToDeposit = wxdai().balanceOf(address(this)) - wxdaiBalanceAfterRepay;
+
+            SAVINGS_X_DAI_ADAPTER.deposit(wxdaiBalanceToDeposit, address(this));
+
+            pool().supply(address(sdai()), sdai().balanceOf(address(this)), address(this), 0);
+            pool().setUserUseReserveAsCollateral(address(sdai()), true);
+
+            uint256 wxdaiToBorrow = amounts[0] - wxdaiBalanceAfterRepay;
+
+            (, , uint256 availableBorrowsBase, , ,) = pool().getUserAccountData(address(this));
+            uint256 availableBorrowsWxdai = convertBaseToWxdai(availableBorrowsBase, wxdaiPrice);
+
+            if (wxdaiToBorrow > availableBorrowsWxdai) {
+                revert AsdaiNotEnoughToBorrow();
+            }
+
+            pool().borrow(address(wxdai()), wxdaiToBorrow, AAVE_INTEREST_RATE_MODE_VARIABLE, 0, address(this));
+            wxdai().transfer(address(BALANCER_VAULT), amounts[0]);
+
+            // zero dust at this point because we have borrowed and returned exactly the flashloan amount
+
         } else {
             revert AsdaiUnknownFlashloanMode();
         }
@@ -411,6 +443,23 @@ contract Asdai is ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
         _doFlashLoan(address(wxdai()), repayDebtWxdai, userData);
 
         emit PositionClose(wxdai().balanceOf(address(this)));
+    }
+
+    /// @notice Repays all debt, withdraws all collateral from Aave and then collateralizes the entire position again.
+    /// Only accessible by the contract owner when the position hasn't been already closed.
+    function resyncPosition()
+        public
+        whenFlagNotSet(FLAGS_POSITION_CLOSED)
+        onlyOwner
+    {
+        uint256 wxdaiPrice = getWxdaiPrice();
+        _rebalance(wxdaiPrice, false);
+
+        (, uint256 totalDebtBase, , , ,) = pool().getUserAccountData(address(this));
+        uint256 repayDebtWxdai = Math.mulDiv(convertBaseToWxdai(totalDebtBase, wxdaiPrice), 103, 100);
+
+        bytes memory userData = abi.encode(FLASH_LOAN_MODE_RESYNC, wxdaiPrice);
+        _doFlashLoan(address(wxdai()), repayDebtWxdai, userData);
     }
 
     function pool()
