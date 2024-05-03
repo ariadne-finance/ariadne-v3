@@ -77,6 +77,8 @@ async function updateApy() {
 
   apy = _apy;
 
+  apy.updatedAt = Math.floor(Date.now() / 1000);
+
   console.log("            agave vault apy", ethers.formatUnits(_apy.agaveVaultApy, 18));
   console.log("        collateral leverage", ethers.formatUnits(_apy.collateralLeverage, 5));
   console.log("     leveragedAgaveVaultApy", ethers.formatUnits(_apy.leveragedAgaveVaultApy, 18));
