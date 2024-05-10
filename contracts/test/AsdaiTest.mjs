@@ -128,6 +128,27 @@ describe("Asdai", function() {
     expect(await wxdai.balanceOf(myAccount.address)).to.be.withinPercent(HUNDRED, 1);
   });
 
+  it("resync position", async () => {
+    await myAccount.sendTransaction({
+      to: wxdai.address,
+      value: HUNDRED
+    });
+
+    await asdai.deposit(HUNDRED);
+
+    expect(await asdai.totalBalanceBase()).to.be.withinPercent(wxdaiPrice * 100n, 1);
+
+    const sdaiPrice = await aaveOracle.getAssetPrice(sdai.address);
+    await aaveOracle.setOverridePrice(sdai.address, sdaiPrice / 100n * 101n);
+
+    const totalBalanceBase = await asdai.totalBalanceBase();
+    expect(totalBalanceBase).to.be.withinPercent(wxdaiPrice * 100n, 5);
+
+    await asdai.connect(ownerAccount).resyncPosition();
+
+    expect(await asdai.totalBalanceBase()).to.be.withinPercent(totalBalanceBase, 1);
+  });
+
   it("sDai price up", async () => {
     await myAccount.sendTransaction({
       to: wxdai.address,
@@ -227,7 +248,7 @@ describe("Asdai", function() {
     await expect(asdai.withdraw(myBalance + 1n)).to.be.revertedWithCustomError(asdai, 'AsdaiIncorrectDepositOrWithdrawalAmount');
   });
 
-  it("only owner can close position", async () => {
+  it("only owner can close and resync position", async () => {
     await myAccount.sendTransaction({
       to: wxdai.address,
       value: HUNDRED
@@ -235,6 +256,7 @@ describe("Asdai", function() {
 
     await asdai.deposit(HUNDRED);
     await expect(asdai.closePosition()).to.be.to.be.revertedWithCustomError(asdai, 'OwnableUnauthorizedAccount');
+    await expect(asdai.resyncPosition()).to.be.to.be.revertedWithCustomError(asdai, 'OwnableUnauthorizedAccount');
   });
 
   it("only owner can set settings and mappings", async () => {
