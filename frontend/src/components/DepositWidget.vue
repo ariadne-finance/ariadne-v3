@@ -944,6 +944,11 @@ async function processShowMainTransactionSuccessOrPartialSuccess({
   const event = logs.find(a => a.name === eventName);
 
   if (!event) {
+    Modal.alert({
+      title: "Done!",
+      body: "Transaction successfully went through but we failed to parse the result. Please check your wallet in a sec."
+    });
+
     const message = eventName + " event not found in transaction receipt. Please check your wallet in a sec.";
 
     const scope = new Sentry.Scope();
@@ -952,8 +957,6 @@ async function processShowMainTransactionSuccessOrPartialSuccess({
     scope.setContext('transactionResponseLogs', { logs });
     scope.setExtra('transactionResponseLogsLength', logs?.length);
     Sentry.captureMessage(message, scope);
-
-    Modal.error(message);
 
     return;
   }
