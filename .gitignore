@@ -110,3 +110,4 @@ contracts/deployments
 contracts/fork-*
 frontend-dist/
 *.sh
+.env.*

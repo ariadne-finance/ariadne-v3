@@ -104,7 +104,7 @@
 
 <script setup>
 /* eslint-disable no-await-in-loop, no-promise-executor-return */
-import * as Sentry from '@sentry/vue';
+import * as Sentry from '@sentry/browser';
 import CenteredLayout from '@/components/CenteredLayout.vue';
 import BlockDecorative from './BlockDecorative.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';

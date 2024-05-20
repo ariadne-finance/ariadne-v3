@@ -23,7 +23,6 @@ export function decodeError(contract, error) {
     return contract.interface.parseError(data);
   } catch (e) {
     console.error("Cannot decode this contract error", e);
-    debugger;
     console.error(e);
   }
 
