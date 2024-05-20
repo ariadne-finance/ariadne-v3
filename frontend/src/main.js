@@ -2,7 +2,7 @@ import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
 import { init } from './useWallet';
-import * as Sentry from '@sentry/vue';
+import * as Sentry from '@sentry/browser';
 
 import './assets/css/main.scss';
 
@@ -10,10 +10,10 @@ init();
 
 const app = createApp(App);
 
-if (location.hostname !== 'localhost') {
+if (document.location.hostname !== 'localhost' && import.meta.env.VITE_SENTRY_DSN) {
   Sentry.init({
     app,
-    dsn: 'https://6deeac70d0248fd4e917bc6a6791a600@o4506603836342272.ingest.us.sentry.io/4507123645874176',
+    dsn: import.meta.env.VITE_SENTRY_DSN,
     attachStacktrace: true
   });
 }
