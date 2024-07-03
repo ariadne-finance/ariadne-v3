@@ -104,7 +104,6 @@
 
 <script setup>
 /* eslint-disable no-await-in-loop, no-promise-executor-return */
-import * as Sentry from '@sentry/browser';
 import CenteredLayout from '@/components/CenteredLayout.vue';
 import BlockDecorative from './BlockDecorative.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
@@ -310,16 +309,6 @@ async function estimateGas(operation, callback, onError) {
       console.error(error);
 
       if (++c >= 3) {
-        Sentry.captureException(error, {
-          tags: {
-            operation,
-            step: 'estimateGas'
-          },
-          extra: {
-            message: error.message
-          }
-        });
-
         closeModalAndMetamaskIsFree();
 
         onError(error);
@@ -334,17 +323,10 @@ async function estimateGas(operation, callback, onError) {
   return calculateProperGaslimit(gasLimit);
 }
 
-function possibleDecodeAndReportMessageInError({ operation, step, error }) {
+function possibleDecodeAndReportMessageInError({ error }) {
   if (!error.data?.message) {
     return false;
   }
-
-  Sentry.captureMessage(error.data.message, {
-    tags: {
-      operation,
-      step
-    }
-  });
 
   closeModalAndMetamaskIsFree();
 
@@ -353,20 +335,13 @@ function possibleDecodeAndReportMessageInError({ operation, step, error }) {
   return true;
 }
 
-function possiblyDecodeAndReportAsdaiError({ operation, step, error }) {
+function possiblyDecodeAndReportAsdaiError({ error }) {
   const decodedError = decodeError(toValue(asdaiContract), error);
   if (!decodedError) {
     return false;
   }
 
   const message = ERROR_MESSAGE_BY_ASDAI_CUSTOM_ERROR[decodedError.name] || "unknown error";
-
-  Sentry.captureMessage(message, {
-    tags: {
-      operation,
-      step
-    }
-  });
 
   closeModalAndMetamaskIsFree();
 
@@ -375,17 +350,10 @@ function possiblyDecodeAndReportAsdaiError({ operation, step, error }) {
   return true;
 }
 
-function possiblyReportIsMetamaskMissingRorV({ operation, step, error }) {
+function possiblyReportIsMetamaskMissingRorV({ error }) {
   if (!isMetamaskMissingRorV(error)) {
     return false;
   }
-
-  Sentry.captureMessage("Missing r or v", {
-    tags: {
-      operation,
-      step
-    }
-  });
 
   showDetailedErrorModal({
     title: "Oops",
@@ -396,20 +364,10 @@ function possiblyReportIsMetamaskMissingRorV({ operation, step, error }) {
   return true;
 }
 
-function captureExceptionAndShowDetailedErrorModal({ operation, step, error, message }) {
+function captureExceptionAndShowDetailedErrorModal({ error, message }) {
   console.error(error);
 
   const actualMessage = error?.data?.message || error.message || message;
-
-  Sentry.captureException(error, {
-    tags: {
-      operation,
-      step
-    },
-    extra: {
-      actualMessage
-    }
-  });
 
   showDetailedErrorModal({
     title: "Oops",
@@ -418,26 +376,26 @@ function captureExceptionAndShowDetailedErrorModal({ operation, step, error, mes
   });
 }
 
-function handleError({ operation, step, error, message }) {
+function handleError({ error, message }) {
   closeModalAndMetamaskIsFree();
 
   if (isMetamaskRejected(error)) {
     return;
   }
 
-  if (possiblyDecodeAndReportAsdaiError({ operation, step, error })) {
+  if (possiblyDecodeAndReportAsdaiError({ error })) {
     return;
   }
 
-  if (possibleDecodeAndReportMessageInError({ operation, step, error })) {
+  if (possibleDecodeAndReportMessageInError({ error })) {
     return;
   }
 
-  if (possiblyReportIsMetamaskMissingRorV({ operation, step, error })) {
+  if (possiblyReportIsMetamaskMissingRorV({ error })) {
     return;
   }
 
-  captureExceptionAndShowDetailedErrorModal({ operation, step, error, message });
+  captureExceptionAndShowDetailedErrorModal({ error, message });
 }
 
 async function estimateGasForWithdrawViaEthers(amount) {
@@ -450,14 +408,12 @@ async function estimateGasForWithdrawViaEthers(amount) {
       break; // once we have estimation
 
     } catch (error) {
-      if (possiblyDecodeAndReportAsdaiError({ operation: 'withdraw', step: 'estimateGas', error })) {
+      if (possiblyDecodeAndReportAsdaiError({ error })) {
         return null;
       }
 
       if (++tries >= 3) {
         captureExceptionAndShowDetailedErrorModal({
-          operation: 'withdraw',
-          step: 'estimateGas',
           error,
           message: "Error estimating gas for withdrawal. Try again later."
         });
@@ -484,8 +440,6 @@ async function withdrawViaEthers(amount) {
 
   } catch (error) {
     handleError({
-      operation: 'withdraw',
-      step: 'tx',
       error,
       message: "Error withdrawing. Try again later."
     });
@@ -510,7 +464,7 @@ async function estimateGasForWithdrawViaRawTransaction(populatedTransaction) {
       break; // once we have estimation
 
     } catch (error) {
-      if (possiblyDecodeAndReportAsdaiError({ operation: 'withdraw', step: 'estimateGas', error })) {
+      if (possiblyDecodeAndReportAsdaiError({ error })) {
         return null;
       }
 
@@ -518,8 +472,6 @@ async function estimateGasForWithdrawViaRawTransaction(populatedTransaction) {
 
       if (++c >= 3) {
         captureExceptionAndShowDetailedErrorModal({
-          operation: 'withdraw',
-          step: 'estimateGas',
           error,
           message: "Error estimating gas for withdrawal. Try again later."
         });
@@ -553,8 +505,6 @@ async function withdrawViaRawTransaction(amount) {
 
   } catch (error) {
     handleError({
-      operation: 'withdraw',
-      step: 'tx',
       error,
       message: "Error withdrawing. Try again later."
     });
@@ -600,7 +550,6 @@ async function withdrawClicked() {
   processShowMainTransactionSuccessOrPartialSuccess({
     transactionReceipt,
     eventName: 'PositionWithdraw',
-    operation: 'withdraw',
     formatSuccessMessage: amount => `Withdrawn ${formatUnits(amount, 18, 4, 4)} wxDai`
   });
 }
@@ -625,8 +574,6 @@ async function wrapViaEthers(amount) {
 
   } catch (error) {
     handleError({
-      operation: 'wrap',
-      step: 'tx',
       error,
       message: "Error wrapping xDai into wxDai. Try again later."
     });
@@ -652,8 +599,6 @@ async function wrapViaRawTransaction(amount) {
 
   } catch (error) {
     handleError({
-      operation: 'wrap',
-      step: 'tx',
       error,
       message: "Error wrapping xDai into wxDai. Try again later."
     });
@@ -681,8 +626,6 @@ async function approveViaEthers(amount) {
 
   } catch (error) {
     handleError({
-      operation: 'approve',
-      step: 'tx',
       error,
       message: "Error approving wxDai. Try again later."
     });
@@ -707,8 +650,6 @@ async function approveViaRawTransaction(amount) {
 
   } catch (error) {
     handleError({
-      operation: 'approve',
-      step: 'tx',
       error,
       message: "Error approving wxDai. Try again later."
     });
@@ -746,7 +687,7 @@ async function estimateGasForDepositViaRawTransaction(populatedTransaction) {
       break; // once we have estimation
 
     } catch (error) {
-      if (possiblyDecodeAndReportAsdaiError({ operation: 'deposit', step: 'estimateGas', error })) {
+      if (possiblyDecodeAndReportAsdaiError({ error })) {
         return null;
       }
 
@@ -754,8 +695,6 @@ async function estimateGasForDepositViaRawTransaction(populatedTransaction) {
 
       if (++tries >= 3) {
         captureExceptionAndShowDetailedErrorModal({
-          operation: 'deposit',
-          step: 'estimateGas',
           error,
           message: "Error estimating gas for deposit. Try again later."
         });
@@ -790,8 +729,6 @@ async function depositViaRawTransaction(amount) {
 
   } catch (error) {
     handleError({
-      operation: 'deposit',
-      step: 'tx',
       error,
       message: "Error depositing. Try again later."
     });
@@ -810,7 +747,7 @@ async function estimateGasForDepositViaEthers(amount) {
       break; // once we have estimation
 
     } catch (error) {
-      if (possiblyDecodeAndReportAsdaiError({ operation: 'deposit', step: 'estimateGas', error })) {
+      if (possiblyDecodeAndReportAsdaiError({ error })) {
         return null;
       }
 
@@ -818,8 +755,6 @@ async function estimateGasForDepositViaEthers(amount) {
 
       if (++tries >= 3) {
         captureExceptionAndShowDetailedErrorModal({
-          operation: 'deposit',
-          step: 'estimateGas',
           error,
           message: "Error estimating gas for deposit. Try again later."
         });
@@ -846,8 +781,6 @@ async function depositViaEthers(amount) {
 
   } catch (error) {
     handleError({
-      operation: 'deposit',
-      step: 'tx',
       error,
       message: "Error depositing. Try again later."
     });
@@ -923,7 +856,6 @@ async function depositClicked() {
   processShowMainTransactionSuccessOrPartialSuccess({
     transactionReceipt,
     eventName: 'PositionDeposit',
-    operation: 'deposit',
     formatSuccessMessage: amount => `Deposited ${formatUnits(amount, 18, 4, 4)} wxDai`
   });
 }
@@ -931,7 +863,6 @@ async function depositClicked() {
 async function processShowMainTransactionSuccessOrPartialSuccess({
   transactionReceipt,
   eventName,
-  operation,
   formatSuccessMessage
 }) {
   refetch(); // fire-and-forget
@@ -948,16 +879,6 @@ async function processShowMainTransactionSuccessOrPartialSuccess({
       title: "Done!",
       body: "Transaction successfully went through but we failed to parse the result. Please check your wallet in a sec."
     });
-
-    const message = eventName + " event not found in transaction receipt. Please check your wallet in a sec.";
-
-    const scope = new Sentry.Scope();
-    scope.setTag('operation', operation);
-    scope.setTag('step', 'parse');
-    scope.setContext('transactionResponseLogs', { logs });
-    scope.setExtra('transactionResponseLogsLength', logs?.length);
-    Sentry.captureMessage(message, scope);
-
     return;
   }
 
