@@ -1,4 +1,5 @@
-import fs from 'fs';
+import fs from 'node:fs';
+import path from 'node:path';
 import Fastify from 'fastify';
 import FastifyCors from '@fastify/cors';
 import { ethers } from 'ethers';
@@ -11,6 +12,10 @@ BigInt.prototype.toJSON = function() {
   return this.toString();
 };
 /* eslint-enable */
+
+function unixtime() {
+  return Math.floor(Date.now() / 1000);
+}
 
 function readAbi(name) {
   return JSON.parse(fs.readFileSync(`../abi/${name}.json`));
@@ -28,7 +33,7 @@ let aavePoolContract;
 
 let apy = null;
 
-async function loadVariableBorrowRate() {
+async function loadVariableBorrowRateFromTheGraph() {
   const document = gql`
     {
       reserves {
@@ -38,11 +43,29 @@ async function loadVariableBorrowRate() {
       }
     }`;
 
-  const r = await request('https://api.thegraph.com/subgraphs/name/aave/protocol-v3-gnosis', document);
+  const r = await request('https://gateway-arbitrum.network.thegraph.com/api/5e7ad678d648e3cf67039e800a852824/subgraphs/id/HtcDaL8L8iZ2KQNNS44EBVmLruzxuNAz1RkBYdui1QUT', document);
 
   const _wxdaiContractAddress = wxdaiAddress.toLowerCase();
   const wxdaiAaveReserve = r.reserves.find(reserve => reserve.underlyingAsset === _wxdaiContractAddress);
   return wxdaiAaveReserve?.variableBorrowRate;
+}
+
+function loadVariableBorrowRate() {
+  const pathname = path.join(import.meta.dirname, '..', 'fuck-thegraph', 'apy.json');
+  if (!fs.existsSync(pathname)) {
+    return null;
+  }
+
+  const json = JSON.parse(fs.readFileSync(pathname));
+  if (!json?.apy) {
+    return null;
+  }
+
+  if (unixtime() - json.updatedAt >= 3 * 60 * 60) {
+    return null;
+  }
+
+  return BigInt(Math.round(json.apy * 100)) * 10n ** 23n;
 }
 
 async function possiblyLoadContracts() {
@@ -65,7 +88,10 @@ async function updateApy() {
   const userData = await aavePoolContract.getUserAccountData(ASDAI_CONTRACT_ADDRESS);
 
   _apy.agaveVaultApy = (await savingsXDaiAdapterContract.vaultAPY()) * 10n ** 2n;
-  _apy.aaveVariableBorrowRate = await loadVariableBorrowRate();
+  _apy.aaveVariableBorrowRate = loadVariableBorrowRate();
+  if (!_apy.aaveVariableBorrowRate) {
+    return;
+  }
 
   _apy.collateralLeverage = 100_000n * 10000n / (10000n - userData.ltv);
   _apy.leveragedAgaveVaultApy = _apy.collateralLeverage * _apy.agaveVaultApy / 100000n;
@@ -77,7 +103,7 @@ async function updateApy() {
 
   apy = _apy;
 
-  apy.updatedAt = Math.floor(Date.now() / 1000);
+  apy.updatedAt = unixtime();
 
   console.log("            agave vault apy", ethers.formatUnits(_apy.agaveVaultApy, 18));
   console.log("        collateral leverage", ethers.formatUnits(_apy.collateralLeverage, 5));
