@@ -37,8 +37,6 @@ async function getApy() {
   }
 
   return apyFloat;
-
-  return BigInt(Math.round(apyFloat * 100)) * 10n ** 23n;
 }
 
 async function cycleGetApy() {
