@@ -1,6 +1,6 @@
 require('@nomicfoundation/hardhat-chai-matchers');
 require('@nomicfoundation/hardhat-verify');
-require('hardhat-abi-exporter');
+//require('hardhat-abi-exporter');
 require('hardhat-contract-sizer');
 require('hardhat-deal');
 require('@openzeppelin/hardhat-upgrades');
