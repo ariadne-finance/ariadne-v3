@@ -22,7 +22,12 @@ async function getApy() {
   await page.goto('https://app.aave.com/reserve-overview/?underlyingAsset=0xe91d153e0b41518a2ce8dd3d7944fa863463a97d&marketName=proto_gnosis_v3');
 
   const apyRootSelector = page.getByText('APY, variable');
-  await apyRootSelector.waitFor();
+
+  try {
+    await apyRootSelector.waitFor();
+  } catch (e) {
+    return null;
+  }
 
   const apyRootElement = await apyRootSelector.elementHandle();
   const apyElement = await apyRootElement.$('xpath=../../../div/p');
