@@ -61,7 +61,7 @@ function loadVariableBorrowRate() {
     return null;
   }
 
-  if (unixtime() - json.updatedAt >= 3 * 60 * 60) {
+  if (unixtime() - json.updatedAt >= 1 * 60 * 60) {
     return null;
   }
 
