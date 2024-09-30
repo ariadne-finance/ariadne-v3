@@ -1,11 +1,12 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import Fastify from 'fastify';
 import FastifyCors from '@fastify/cors';
 import { ethers } from 'ethers';
 import { request, gql } from 'graphql-request';
 
 process.loadEnvFile();
+
+const subgraphUrl = process.env.FUCK_THE_GRAPH_BASE_URL + '/' + process.env.FUCK_THE_GRAPH_API_KEY + '/subgraphs/id/' + process.env.AAVE_SUBGRAPH_ID;
 
 /* eslint-disable */
 BigInt.prototype.toJSON = function() {
@@ -43,29 +44,11 @@ async function loadVariableBorrowRateFromTheGraph() {
       }
     }`;
 
-  const r = await request('https://gateway-arbitrum.network.thegraph.com/api/5e7ad678d648e3cf67039e800a852824/subgraphs/id/HtcDaL8L8iZ2KQNNS44EBVmLruzxuNAz1RkBYdui1QUT', document);
+  const r = await request(subgraphUrl, document);
 
   const _wxdaiContractAddress = wxdaiAddress.toLowerCase();
   const wxdaiAaveReserve = r.reserves.find(reserve => reserve.underlyingAsset === _wxdaiContractAddress);
   return wxdaiAaveReserve?.variableBorrowRate;
-}
-
-function loadVariableBorrowRate() {
-  const pathname = path.join(import.meta.dirname, '..', 'fuck-thegraph', 'apy.json');
-  if (!fs.existsSync(pathname)) {
-    return null;
-  }
-
-  const json = JSON.parse(fs.readFileSync(pathname));
-  if (!json?.apy) {
-    return null;
-  }
-
-  if (unixtime() - json.updatedAt >= 1 * 60 * 60) {
-    return null;
-  }
-
-  return BigInt(Math.round(json.apy * 100)) * 10n ** 23n;
 }
 
 async function possiblyLoadContracts() {
@@ -88,7 +71,7 @@ async function updateApy() {
   const userData = await aavePoolContract.getUserAccountData(ASDAI_CONTRACT_ADDRESS);
 
   _apy.agaveVaultApy = (await savingsXDaiAdapterContract.vaultAPY()) * 10n ** 2n;
-  _apy.aaveVariableBorrowRate = loadVariableBorrowRate();
+  _apy.aaveVariableBorrowRate = await loadVariableBorrowRateFromTheGraph();
   if (!_apy.aaveVariableBorrowRate) {
     return;
   }
@@ -124,7 +107,7 @@ async function cycleLoadApy() {
     console.error("Recovered");
   }
 
-  setTimeout(cycleLoadApy, 10 * 60 * 1000);
+  setTimeout(cycleLoadApy, 30 * 60 * 1000); // 30min
 }
 
 cycleLoadApy();
