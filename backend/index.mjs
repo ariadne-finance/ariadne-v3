@@ -107,7 +107,7 @@ async function cycleLoadApy() {
     console.error("Recovered");
   }
 
-  setTimeout(cycleLoadApy, 10 * 60 * 1000);
+  setTimeout(cycleLoadApy, 30 * 60 * 1000); // 30min
 }
 
 cycleLoadApy();
