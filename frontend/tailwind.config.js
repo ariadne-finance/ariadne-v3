@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
-const tailwindForms = require('@tailwindcss/forms');
-const defaultTheme = require('tailwindcss/defaultTheme');
+import tailwindForms from '@tailwindcss/forms';
+import defaultTheme from 'tailwindcss/defaultTheme';
 
 module.exports = {
   mode: 'dark',
