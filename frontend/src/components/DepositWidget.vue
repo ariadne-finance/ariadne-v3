@@ -45,7 +45,7 @@
               <currency-input-withdraw
                 ref="depositInput"
                 v-model="depositAmount"
-                v-model:selectedWithdrawToken="selectedDepositToken"
+                v-model:selected-withdraw-token="selectedDepositToken"
                 :decimals="18"
                 :display-decimals="4"
                 :max="selectedDepositTokenBalanceOrNative"
@@ -78,7 +78,7 @@
               <currency-input-withdraw
                 ref="withdrawInput"
                 v-model="withdrawAmount"
-                v-model:selectedWithdrawToken="selectedWithdrawToken"
+                v-model:selected-withdraw-token="selectedWithdrawToken"
                 :decimals="18"
                 :display-decimals="4"
                 :max="asdaiBalanceAsWxdai"
@@ -104,6 +104,8 @@
 
 <script setup>
 /* eslint-disable no-await-in-loop, no-promise-executor-return */
+/* eslint-disable no-unused-vars */ // we need this for withdrawViaEthers and other *viaEthers functions
+
 import CenteredLayout from '@/components/CenteredLayout.vue';
 import BlockDecorative from './BlockDecorative.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
